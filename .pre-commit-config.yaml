@@ -1,0 +1,39 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+      -  id: check-added-large-files
+      -  id: check-ast
+      -  id: check-docstring-first
+      -  id: check-executables-have-shebangs
+      -  id: check-json
+      -  id: check-merge-conflict
+      -  id: check-toml
+      -  id: check-xml
+      -  id: check-yaml
+      -  id: debug-statements
+      -  id: detect-private-key
+      -  id: end-of-file-fixer
+      -  id: fix-byte-order-marker
+      -  id: trailing-whitespace
+-   repo: https://github.com/psf/black
+    rev: 21.5b0
+    hooks:
+      - id: black
+-   repo: https://github.com/pycqa/isort
+    rev: 5.8.0
+    hooks:
+      - id: isort
+-   repo: https://github.com/sirosen/check-jsonschema
+    rev: 0.3.0
+    hooks:
+      - id: check-github-workflows
+-   repo: https://github.com/PyCQA/bandit
+    rev: 1.7.0
+    hooks:
+      - id: bandit
+        exclude: tests
+-   repo: https://github.com/jendrikseipp/vulture
+    rev: v2.3
+    hooks:
+      - id: vulture

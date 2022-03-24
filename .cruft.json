@@ -1,0 +1,24 @@
+{
+  "template": "git+ssh://git@github.com/HappyEinara/templates-python.git",
+  "commit": "9055c0557902df1df354eabd34cfe4a0228c2fa4",
+  "checkout": "template-python-application",
+  "context": {
+    "cookiecutter": {
+      "project": "Wingline",
+      "package": "wingline",
+      "slug": "wingline",
+      "cli_command": "wingline",
+      "author": "Dave Singer",
+      "author_email": "dave.singer@einara.com",
+      "github_username": "HappyEinara",
+      "envvar_prefix": "WL",
+      "repo_url": "https://github.com/HappyEinara/wingline",
+      "description": "A simple line-based data reader and translator",
+      "_copy_without_render": [
+        "*.github/workflows/*.yaml"
+      ],
+      "_template": "git+ssh://git@github.com/HappyEinara/templates-python.git"
+    }
+  },
+  "directory": null
+}

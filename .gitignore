@@ -1,0 +1,22 @@
+# Build and distribution artefacts
+*.egg-info/
+build/
+dist/
+
+# Test artefacts
+.coverage
+.mypy_cache/
+.pytest_cache/
+.tox/
+
+# Runtime artefacts
+__pycache__/
+*.pyc
+
+# Dev artefacts
+#   From cruft
+*.rej
+#   From virtualfish
+.venv
+#   poetry.lock should be versioned for applications
+# poetry.lock
