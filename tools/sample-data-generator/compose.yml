@@ -1,0 +1,18 @@
+services:
+  dynamodb:
+    image:  amazon/dynamodb-local
+    restart: always
+    volumes:
+      -  dynamodb:/home/dynamodblocal/data
+    ports:
+      - 8000:8000
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data/"
+    user: root
+  generator:
+    build: ./build
+    depends_on:
+      - dynamodb
+    volumes:
+      - $WL_SAMPLE_DATA_OUTPUT_DIR:/data
+volumes:
+  dynamodb:

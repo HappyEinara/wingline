@@ -1,4 +1,4 @@
-.PHONY: all ensure-poetry install version
+.PHONY: all ensure-poetry install version generate-sample-data
 
 POETRY_INSTALLED := $(shell command -v poetry)
 
@@ -38,3 +38,6 @@ tag-release: install
 
 bump-version: install
 	poetry version patch | tail -n 1 | sed 's/^Bumping/Bump/'
+
+generate-sample-data:
+	./tools/sample-data-generator/generate-sample-data.sh

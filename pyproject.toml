@@ -1,12 +1,12 @@
 [build-system]
-requires = [ "poetry-core>=1.0.0",]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "wingline"
 version = "0.1.1"
 description = "A simple line-based data reader and translator"
-authors = [ "Dave Singer <dave.singer@einara.com>",]
+authors = ["Dave Singer <dave.singer@einara.com>"]
 license = "MIT"
 readme = "README.md"
 
@@ -15,14 +15,19 @@ profile = "black"
 known_first_party = "wingline"
 
 [tool.vulture]
-paths = [ "wingline", "tests",]
-exclude = [ "settings.py",]
+paths = ["wingline", "tests"]
+exclude = ["settings.py"]
 
 [tool.poetry.dependencies]
 python = "^3.7.0"
 fastapi = "^0.65.2"
 pydantic = "^1.8.1"
 requests = "^2.25.1"
+filetype = "^1.0.10"
+cachelib = "^0.6.0"
+pytest-cases = { version = "^3.6.11", extras = ["tests"] }
+dill = "^0.3.4"
+msgpack = "^1.0.3"
 
 [tool.poetry.dev-dependencies]
 nox = "^2021.10.1 "
@@ -32,19 +37,27 @@ GitPython = "^3.1.27"
 semver = "^2.13.0"
 
 [tool.poetry.extras]
-dev = [ "ipdb", "pudb", "pytest-pudb", "uvicorn",]
-lint = [ "flake8-bugbear", "mypy", "pep8-naming", "pylint", "pre-commit", "isort", "black",]
-security = [ "bandit", "safety",]
-tests = [ "gitpython", "semver", "pytest-cov", "pytest-xdist", "coverage",]
+dev = ["ipdb", "pudb", "pytest-pudb", "uvicorn"]
+lint = [
+  "flake8-bugbear",
+  "mypy",
+  "pep8-naming",
+  "pylint",
+  "pre-commit",
+  "isort",
+  "black",
+]
+security = ["bandit", "safety"]
+tests = ["gitpython", "semver", "pytest-cov", "pytest-xdist", "coverage"]
 
 [tool.poetry.scripts]
 wingline = "wingline.cli:app"
 
 [tool.pylint.master]
-extension-pkg-allow-list = [ "pydantic",]
+extension-pkg-allow-list = ["pydantic"]
 
 [tool.poetry.dependencies.typer]
-extras = [ "all",]
+extras = ["all"]
 version = ">=0.3.2,<1.0"
 
 [tool.poetry.dependencies.bandit]

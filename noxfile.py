@@ -166,7 +166,6 @@ def dev(session):
         "-m",
         "mypy",
         PACKAGE_DIR,
-        *tests,
         silent=False,
     )
     session.run(
