@@ -4,12 +4,14 @@ import pathlib
 from typing import Optional
 
 from wingline.files.formats._base import Format
+from wingline.files.formats.csv import Csv
 from wingline.files.formats.json_lines import JsonLines
 from wingline.files.formats.msgpack import Msgpack
 
 _FORMAT_TYPES: set[type[Format]] = {
     JsonLines,
     Msgpack,
+    Csv,
 }
 
 FORMATS: dict[str, type[Format]] = {

@@ -8,9 +8,10 @@ from wingline.files import file
 @parametrize_with_cases(
     "path,content_hash,container,format,line_count", cases="tests.cases.files"
 )
-def test_dynamo_gz(path, content_hash, container, format, line_count):
+def test_format_and_container(path, content_hash, container, format, line_count):
     """The format is JSON and the container is gz."""
 
     test_file = file.File(path)
-    assert test_file.reader.format_type.mime_type == "application/json"
-    assert test_file.reader.container.mime_type == "application/gzip"
+    assert test_file.reader.format_type == format
+    assert type(test_file.reader.container) == container
+    assert test_file.content_hash == content_hash

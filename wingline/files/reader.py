@@ -2,9 +2,9 @@
 
 import contextlib
 import pathlib
-from typing import Any, Generator, Iterator
+from typing import Any, Generator, Iterator, Optional
 
-from wingline.files import filetype
+from wingline.files import containers, filetype, formats
 
 
 class Reader:
@@ -13,10 +13,18 @@ class Reader:
     def __init__(
         self,
         path: pathlib.Path,
+        format: Optional[type[formats.Format]] = None,
+        container: Optional[type[containers.Container]] = None,
     ):
         self.path = path
-        self.container = filetype.get_container(self.path)
-        self.format_type = filetype.detect_format(self.container)
+        self.container = (
+            container(self.path)
+            if container is not None
+            else filetype.get_container(self.path)
+        )
+        self.format_type = (
+            format if format is not None else filetype.detect_format(self.container)
+        )
 
     @contextlib.contextmanager
     def _get_handle(self):

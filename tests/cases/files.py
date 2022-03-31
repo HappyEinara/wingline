@@ -16,3 +16,32 @@ def case_dynamodb_jsonl_gz(data_dir):
         formats.JsonLines,
         85,
     )
+
+
+def case_csv(data_dir):
+    """Plain CSV."""
+
+    # b2sum --length 64 --binary examples/data/2016Census_G01_NSW_LGA.csv
+    # cbd95cd394278dc5 *examples/data/2016Census_G01_NSW_LGA.csv
+
+    return (
+        data_dir / "2016Census_G01_NSW_LGA.csv",
+        "cbd95cd394278dc5",
+        containers.Container,
+        formats.Csv,
+        85,
+    )
+
+
+# def case_csv_zip(data_dir):
+#     """Zipped CSV."""
+
+#     # b2sum --length 64 --binary examples/data/2016_GCP_LGA_for_NSW_short-header.zip
+#     # d89d6200b8975e2e *examples/data/2016_GCP_LGA_for_NSW_short-header.zip
+#     return (
+#         data_dir / "2016_GCP_LGA_for_NSW_short-header.zip",
+#         "d89d6200b8975e2e",
+#         containers.Zip,
+#         formats.Csv,
+#         85,
+#     )

@@ -14,6 +14,7 @@ def test_reader(path, content_hash, container, format, line_count):
     reader_object = reader.Reader(path)
     assert isinstance(reader_object.container, container)
     assert reader_object.format_type is format
+    breakpoint()
     with reader_object as file_reader:
         first_line = next(file_reader)
         assert first_line

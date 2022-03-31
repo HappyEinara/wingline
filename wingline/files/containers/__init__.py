@@ -3,11 +3,9 @@ from typing import Optional
 
 from wingline.files.containers._base import DEFAULT_CONTAINER_MIME_TYPE, Container
 from wingline.files.containers.gzip import Gzip
+from wingline.files.containers.zip import Zip
 
-_CONTAINER_TYPES: set[type[Container]] = {
-    Container,
-    Gzip,
-}
+_CONTAINER_TYPES: set[type[Container]] = {Container, Gzip, Zip}
 
 
 CONTAINERS: dict[str, type[Container]] = {
