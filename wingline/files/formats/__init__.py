@@ -44,6 +44,7 @@ def get_mime_type_by_path(path: pathlib.Path) -> Optional[str]:
 
 
 __all__ = [
+    "Csv",
     "Format",
     "JsonLines",
     "Msgpack",
