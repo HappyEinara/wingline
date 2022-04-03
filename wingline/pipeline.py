@@ -9,7 +9,7 @@ from wingline import graph
 from wingline.cache import intermediate
 from wingline.files import containers, file, formats
 from wingline.plumbing import pipe, tap
-from wingline.plumbing.pipes import cachewriter, processpipe
+from wingline.plumbing.pipes import cachereader, cachewriter, processpipe
 from wingline.plumbing.sinks import iteratorsink, writersink
 from wingline.plumbing.taps import filetap
 from wingline.types import PayloadIterable, PayloadIterator, PipeProcess
@@ -69,10 +69,10 @@ class Pipeline:
         if self.cache_dir:
             cache_path = intermediate.get_cache_path(new_pipe.hash, self.cache_dir)
             if cache_path.exists():
-                pass
+                new_pipe = cachereader.CacheReader(new_pipe, cache_path)
             else:
                 new_pipe = cachewriter.CacheWriter(new_pipe, cache_path)
-                self.graph.add_node(new_pipe)
+            self.graph.add_node(new_pipe)
         return Pipeline(self, at_node=new_pipe)
 
     def write(

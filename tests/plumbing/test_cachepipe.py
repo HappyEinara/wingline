@@ -1,4 +1,6 @@
 """Test intermediate cacheing."""
+from unittest import mock
+
 import pytest
 
 import wingline
@@ -12,7 +14,7 @@ def input():
         {"d": 1, "e": 1, "f": 1},
     ]
 
-def test_cachepipe(input, func_add_one, tmp_path):
+def test_cachepipe_writer(input, func_add_one, tmp_path):
     """The cache pipes wors."""
 
     cache_dir = tmp_path
@@ -42,3 +44,38 @@ def test_cachepipe(input, func_add_one, tmp_path):
     second_cache_file = file.File(second_cache_path)
     second_result = list(second_cache_file)
     assert second_result == list(second_expected)
+
+def test_cachepipe_reader(input, func_add_one, tmp_path):
+    """The cache pipes wors."""
+
+    cache_dir = tmp_path
+
+    test_pipeline = wingline.Pipeline(input, cache_dir=cache_dir)
+    first_process = test_pipeline.process(func_add_one)
+    second_process = first_process.process(func_add_one)
+    first_run_first_process_hash = first_process.at.hash
+    first_run_second_process_hash = second_process.at.hash
+    first_process.at.parent.thread.process = mock.MagicMock(side_effect=first_process.at.parent.thread.process)
+    second_process.at.parent.thread.process = mock.MagicMock(side_effect=second_process.at.parent.thread.process)
+    result = list(second_process)
+    assert len(result) == len(input)
+    first_process.at.parent.thread.process.assert_called()
+    second_process.at.parent.thread.process.assert_called()
+    assert first_process.at.parent.started
+    assert second_process.at.parent.started
+
+    test_pipeline = wingline.Pipeline(input, cache_dir=cache_dir)
+    first_process = test_pipeline.process(func_add_one)
+    second_process = first_process.process(func_add_one)
+    second_run_first_process_hash = first_process.at.hash
+    second_run_second_process_hash = second_process.at.hash
+    first_process.at.parent.thread.process = mock.MagicMock(side_effect=first_process.at.parent.thread.process)
+    second_process.at.parent.thread.process = mock.MagicMock(side_effect=second_process.at.parent.thread.process)
+    result = list(second_process)
+    assert len(result) == len(input)
+    first_process.at.parent.thread.process.assert_not_called()
+    second_process.at.parent.thread.process.assert_not_called()
+    assert first_run_first_process_hash == second_run_first_process_hash
+    assert first_run_second_process_hash == second_run_second_process_hash
+    assert not first_process.at.parent.started
+    assert not second_process.at.parent.started

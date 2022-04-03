@@ -14,7 +14,7 @@ class CacheWriter(pipe.Pipe):
     def __init__(
         self, parent: pipe.Pipe, cache_path: pathlib.Path, name: Optional[str] = None
     ):
-        name = name if name is not None else f"cache-{cache_path.name}"
+        name = name if name is not None else f"cachewriter-{cache_path.name}"
         super().__init__(parent, name)
         self._file = file.File(cache_path, intermediate.FORMAT, intermediate.CONTAINER)
 
