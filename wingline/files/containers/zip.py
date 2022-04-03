@@ -1,8 +1,8 @@
 """Zip container."""
 
 import contextlib
-import zipfile
 import pathlib
+import zipfile
 from typing import BinaryIO, Generator, cast
 
 from wingline.files.containers import _base
@@ -12,6 +12,7 @@ class Zip(_base.Container):
     """Zip container"""
 
     mime_type = "application/zip"
+    suffixes = {".zip"}
 
     @contextlib.contextmanager
     @staticmethod

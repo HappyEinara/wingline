@@ -1,11 +1,11 @@
 """Detect filetype."""
 
 import pathlib
-from typing import BinaryIO
+from typing import BinaryIO, Container, Optional
 
 import filetype
 
-from wingline.files import containers, formats, reader
+from wingline.files import containers, formats, reader, writer
 
 # https://github.com/h2non/filetype.py/blame/master/README.rst#L19
 HEADER_SIZE = 261
@@ -40,7 +40,36 @@ def detect_format(container: containers.Container) -> type[formats.Format]:
     return format
 
 
+def get_filetypes_by_path(
+    path: pathlib.Path,
+) -> tuple[type[containers.Container], type[formats.Format]]:
+    """Infer container and format types based on the path suffixes."""
+
+    container = containers.get_container_by_suffix(path.suffix)
+    if container:
+        format = formats.get_format_by_suffix(path.suffixes[1])
+        if not format:
+            raise ValueError(f"Couldn't determine file types for path {path}")
+    else:
+        container = containers.DEFAULT_CONTAINER
+        format = formats.get_format_by_suffix(path.suffix)
+        if not format:
+            raise ValueError(f"Couldn't determine file types for path {path}")
+
+    return container, format
+
+
 def get_reader(path: pathlib.Path) -> reader.Reader:
     """Get a reader for the file."""
 
     return reader.Reader(path)
+
+
+def get_writer(
+    path: pathlib.Path,
+    format: Optional[type[formats.Format]] = None,
+    container: Optional[type[containers.Container]] = None,
+) -> writer.Writer:
+    """Get a reader for the file."""
+
+    return writer.Writer(path, format=format, container=container)

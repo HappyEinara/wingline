@@ -7,15 +7,25 @@ import pathlib
 from typing import Any, Generator, Optional
 
 from wingline import hasher
-from wingline.files import filetype
+from wingline.files import containers, filetype, formats
 
 logger = logging.getLogger(__name__)
 
 
 class File:
-    def __init__(self, path: pathlib.Path):
+    def __init__(
+        self,
+        path: pathlib.Path,
+        format_type: Optional[type[formats.Format]] = None,
+        container_type: Optional[type[containers.Container]] = None,
+    ):
         self.path = path
-        self.reader = filetype.get_reader(self.path)
+        self._format_type = format_type
+        self._container_type = container_type
+
+    @property
+    def stem(self):
+        return self.path.stem.partition(".")[0]
 
     @property
     def stat(self) -> Optional[os.stat_result]:
@@ -41,6 +51,18 @@ class File:
         return self.content_hash
 
     @property
+    def reader(self):
+        if not self.exists:
+            raise RuntimeError("Can't read from a nonexistent file.")
+        return filetype.get_reader(self.path)
+
+    @property
+    def writer(self):
+        if self.exists:
+            raise RuntimeError("Can't write to a file that exists.")
+        return filetype.get_writer(self.path, self._format_type, self._container_type)
+
+    @property
     def exists(self):
         return self.path.exists()
 
@@ -56,7 +78,7 @@ class File:
         return self._iterator()
 
     def __str__(self):
-        return str(self.path.name)
+        return str(self.stem)
 
     def __repr__(self):
         hash = f"|{self.content_hash}" if self.content_hash else ""

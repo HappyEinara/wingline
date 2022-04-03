@@ -3,8 +3,10 @@
 import queue
 from typing import Optional
 
+from wingline.types import Payload
 
-class Queue(queue.Queue):
+
+class Queue(queue.Queue[Payload]):
     def __init__(self, *args, name: Optional[str] = None, **kwargs):
         self.name = name
         super().__init__(*args, **kwargs)

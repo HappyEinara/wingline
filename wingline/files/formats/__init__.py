@@ -14,12 +14,16 @@ _FORMAT_TYPES: set[type[Format]] = {
     Csv,
 }
 
-FORMATS: dict[str, type[Format]] = {
+FORMATS_BY_MIME_TYPE: dict[str, type[Format]] = {
     format.mime_type: format for format in _FORMAT_TYPES
 }
 
-SUFFIX_MIME_TYPES = {
-    suffix: format.mime_type for format in _FORMAT_TYPES for suffix in format.suffixes
+FORMATS_BY_NAME: dict[str, type[Format]] = {
+    format.__name__: format for format in _FORMAT_TYPES
+}
+
+FORMATS_BY_SUFFIX: dict[str, type[Format]] = {
+    suffix: format for format in _FORMAT_TYPES for suffix in format.suffixes
 }
 
 
@@ -28,19 +32,19 @@ def get_format_by_mime_type(mime_type: Optional[str]) -> type[Format]:
 
     mime_type = mime_type if mime_type else "<unrecognized>"
     try:
-        format = FORMATS[mime_type]
+        format = FORMATS_BY_MIME_TYPE[mime_type]
     except KeyError:
         raise ValueError("Unsupported format: %s", mime_type)
     return format
 
 
-def get_mime_type_by_path(path: pathlib.Path) -> Optional[str]:
-    """Get the mimetype by extension."""
+def get_format_by_suffix(suffix: str) -> Optional[type[Format]]:
+    """Return a format for a path suffix"""
 
-    for part in path.suffixes:
-        mime_type = SUFFIX_MIME_TYPES.get(part)
-        if mime_type:
-            return mime_type
+    # Don't return the default here; calling code
+    # may need None to know if the suffix has been consumed
+    # or not.
+    return FORMATS_BY_SUFFIX.get(suffix)
 
 
 __all__ = [

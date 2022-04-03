@@ -12,6 +12,7 @@ class Container:
     """Base class for a file container."""
 
     mime_type: str = DEFAULT_CONTAINER_MIME_TYPE
+    suffixes: set[str] = set()
 
     def __init__(self, path: pathlib.Path):
         self.path = path

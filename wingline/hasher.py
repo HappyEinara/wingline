@@ -1,5 +1,6 @@
 """File hasher."""
 
+import collections.abc
 import hashlib
 import pathlib
 from typing import Any, Callable
@@ -24,9 +25,30 @@ def hash_file(path: pathlib.Path) -> str:
     return file_hash.hexdigest()
 
 
+def _hash_object(obj: object) -> str:
+    """Hash an arbitrary python object.
+
+    Internal function to DRY the more specific public functions.
+    """
+
+    obj_pickle = pickle.dumps(obj)
+    obj_hash = hasher(obj_pickle).hexdigest()
+    return obj_hash
+
+
+def hash_sequence(sequence: collections.abc.Sequence) -> str:
+    """Hash a sequence."""
+
+    return _hash_object(sequence)
+
+
 def hash_callable(callable: Callable[..., Any]) -> str:
     """Hash a callable."""
 
-    callable_pickle = pickle.dumps(callable)
-    callable_hash = hasher(callable_pickle).hexdigest()
-    return callable_hash
+    return _hash_object(callable)
+
+
+def hash_string(input: str) -> str:
+    """Hash a string."""
+
+    return hasher(input.encode("utf-8")).hexdigest()

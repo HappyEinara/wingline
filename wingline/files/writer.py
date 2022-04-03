@@ -4,7 +4,7 @@ import contextlib
 import pathlib
 from typing import Callable, Generator, Iterator, Optional
 
-from wingline.files import containers, formats
+from wingline.files import containers, filetype, formats
 from wingline.types import Payload
 
 
@@ -14,16 +14,21 @@ class Writer:
     def __init__(
         self,
         path: pathlib.Path,
-        format: type[formats.Format],
+        format: Optional[type[formats.Format]] = None,
         container: Optional[type[containers.Container]] = None,
     ):
+
         self.path = path
-        self.container = (
-            container(self.path)
-            if container is not None
-            else containers.Container(path)
-        )
-        self.format = format
+        if container and format:
+            container_type = container
+            format_type = format
+        else:
+            inferred_container, inferred_format = filetype.get_filetypes_by_path(path)
+
+            format_type = format if format is not None else inferred_format
+            container_type = container if container is not None else inferred_container
+        self.container = container_type(path)
+        self.format_type = format_type
 
     @contextlib.contextmanager
     def _get_write_handle(self):
@@ -33,7 +38,7 @@ class Writer:
     @contextlib.contextmanager
     def _get_writer(self) -> Generator[Callable[[Payload], None], None, None]:
         with self._get_write_handle() as _handle:
-            writer = self.format(_handle).writer
+            writer = self.format_type(_handle).writer
             yield writer
 
     def __enter__(self):

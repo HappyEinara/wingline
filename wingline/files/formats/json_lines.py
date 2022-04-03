@@ -22,4 +22,6 @@ class JsonLines(_base.Format):
     def write(self, handle: BinaryIO, payload: Payload) -> None:
         """Writer."""
 
-        handle.write(json.dumps(payload, default=str, sort_keys=True).encode("utf-8"))
+        handle.write(
+            (json.dumps(payload, default=str, sort_keys=True) + "\n").encode("utf-8")
+        )

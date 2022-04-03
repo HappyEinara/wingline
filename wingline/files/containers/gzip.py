@@ -12,6 +12,7 @@ class Gzip(_base.Container):
     """Gzip container"""
 
     mime_type = "application/gzip"
+    suffixes = {".gz", ".gzip"}
 
     @contextlib.contextmanager
     @staticmethod
