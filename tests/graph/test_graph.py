@@ -1,5 +1,4 @@
-"""Test the Pipeline.write interface."""
-
+"""Test the graph."""
 import threading
 
 import pytest
@@ -24,7 +23,7 @@ CASES = (
 
 
 @pytest.mark.parametrize("input,expected", CASES)
-def test_write_fluent(input, expected, func_add_one, tmp_path):
+def test_graph(input, expected, func_add_one, tmp_path):
     """The fluent interface works."""
 
     output_file = tmp_path / "test-write-fluent-output.jl"
@@ -35,7 +34,7 @@ def test_write_fluent(input, expected, func_add_one, tmp_path):
         .write(output_file)
     )
 
-    test_pipeline.run()
+    graph = test_pipeline.graph.dict
 
     # There should only be the main thread left
     # Check the threading module's reports are
@@ -46,9 +45,3 @@ def test_write_fluent(input, expected, func_add_one, tmp_path):
         == threading.main_thread()
         == threading.current_thread()
     )
-
-    output_files = list(tmp_path.glob("*"))
-    assert len(output_files) == 1
-
-    result = output_files[0].read_text()
-    assert result == expected

@@ -5,6 +5,7 @@ from __future__ import annotations
 import pathlib
 from typing import Optional
 
+from wingline import graph
 from wingline.files import containers, file, formats
 from wingline.plumbing import tap
 from wingline.plumbing.pipes import processpipe
@@ -69,6 +70,12 @@ class Pipeline:
         """Read-only property. True if the pipe has started."""
 
         return self._pipe.started
+
+    @property
+    def graph(self):
+        """Get the graph for the pipeline."""
+
+        return graph.PipelineGraph(self)
 
     def run(self):
         """Run the pipeline."""

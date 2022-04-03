@@ -9,6 +9,9 @@ from wingline.types import Payload
 
 
 class WriterSink(sink.Sink):
+
+    emoji = "⇥💾"
+
     def __init__(
         self,
         parent: pipe.Pipe,

@@ -9,6 +9,7 @@ from wingline.types import Payload, PayloadIterator, PipeProcess
 
 class ProcessPipe(pipe.Pipe):
     """A pipe that carries out a process on its input"""
+    emoji = "🠞⚙️"
 
     def __init__(
         self, parent: pipe.Pipe, process: PipeProcess, name: Optional[str] = None

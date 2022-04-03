@@ -16,7 +16,6 @@ def test_basic():
     result = list(iter)
 
     assert result == input
-    breakpoint()
 
     # There should only be the main thread left
     # Check the threading module's reports are

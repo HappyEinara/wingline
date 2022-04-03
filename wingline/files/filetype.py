@@ -32,9 +32,9 @@ def detect_format(container: containers.Container) -> type[formats.Format]:
         format_type = filetype.guess(handle)
     if format_type:
         format_mime_type = format_type.mime if format_type else None
+        format = formats.get_format_by_mime_type(format_mime_type)
     else:
-        format_mime_type = formats.get_mime_type_by_path(container.path)
-    format = formats.get_format_by_mime_type(format_mime_type)
+        _, format = get_filetypes_by_path(container.path)
     if not format:
         raise ValueError("Couldn't determine format.")
     return format
@@ -47,9 +47,10 @@ def get_filetypes_by_path(
 
     container = containers.get_container_by_suffix(path.suffix)
     if container:
-        format = formats.get_format_by_suffix(path.suffixes[1])
+        suffix = path.suffixes[-2]
+        format = formats.get_format_by_suffix(suffix)
         if not format:
-            raise ValueError(f"Couldn't determine file types for path {path}")
+            raise ValueError(f"Couldn't determine file types for path {path} (got container {container}, but nothing for format suffix {suffix})")
     else:
         container = containers.DEFAULT_CONTAINER
         format = formats.get_format_by_suffix(path.suffix)

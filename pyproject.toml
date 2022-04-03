@@ -25,9 +25,10 @@ pydantic = "^1.8.1"
 requests = "^2.25.1"
 filetype = "^1.0.10"
 cachelib = "^0.6.0"
-pytest-cases = { version = "^3.6.11", extras = ["tests"] }
 dill = "^0.3.4"
 msgpack = "^1.0.3"
+rich = { version = "^12.0.1", optional = true }
+pytest-cases = {version = "^3.6.11", optional = true}
 
 [tool.poetry.dev-dependencies]
 nox = "^2021.10.1 "
@@ -48,7 +49,16 @@ lint = [
   "black",
 ]
 security = ["bandit", "safety"]
-tests = ["gitpython", "semver", "pytest-cov", "pytest-xdist", "coverage"]
+tests = [
+  "gitpython",
+  "semver",
+  "pytest-cov",
+  "pytest-xdist",
+  "coverage",
+  "pytest-cases",
+  "rich",
+]
+ui = ["rich"]
 
 [tool.poetry.scripts]
 wingline = "wingline.cli:app"

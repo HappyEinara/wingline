@@ -50,6 +50,8 @@ class PipeThread(threading.Thread):
 class Pipe:
     """Base pipe."""
 
+    emoji = "🠞"
+
     def __init__(self, parent: Pipe, name: str) -> None:
         self.name = name
         self.parent = parent
@@ -105,3 +107,9 @@ class Pipe:
 
     def teardown(self) -> None:
         pass
+
+    def __str__(self) -> str:
+        return f"{self.emoji} {self.name}"
+
+    def __repr__(self) -> str:
+        return f"<{str(self)}-{id(self)}>"

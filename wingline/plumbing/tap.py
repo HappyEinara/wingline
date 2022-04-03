@@ -13,6 +13,8 @@ from wingline.types import SENTINEL, PayloadIterable
 class Tap(Pipe):
     """A Pipe subclass that has no parent and generates output from some other source."""
 
+    emoji = "﹛﹜↦"
+
     def __init__(self, source: PayloadIterable, name: str) -> None:
         self.name = name
         self.source = source

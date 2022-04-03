@@ -72,11 +72,11 @@ def simple_data():
 
 
 @fixture
-def add_one():
-    def _inner(payload: Payload) -> PayloadIterator:
+def func_add_one():
+    def add_one(payload: Payload) -> PayloadIterator:
 
         """Add one to the value of each key."""
 
         yield {k: v + 1 for (k, v) in payload.items()}
 
-    return _inner
+    return add_one

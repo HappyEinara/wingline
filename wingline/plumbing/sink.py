@@ -12,3 +12,5 @@ class Sink(pipe.Pipe):
     Subclassing this means that it will run even if it's the
     ancestor of a cached ProcessPipe
     """
+
+    emoji = "⇥"

@@ -4,14 +4,17 @@ import threading
 
 import pytest_cases
 
-from wingline.plumbing import filetap, iterator
+from wingline.files import file
+from wingline.plumbing.sinks import iteratorsink
+from wingline.plumbing.taps import filetap
 
 
 @pytest_cases.parametrize_with_cases("path,line_count")
 def test_filetap(path, line_count):
 
-    tap = filetap.FileTap(path)
-    pipe_iterator = iterator.Iterator(tap)
+    test_file = file.File(path)
+    tap = filetap.FileTap(test_file, "test_file_tap")
+    pipe_iterator = iteratorsink.IteratorSink(tap, "test_iterator_sink")
 
     result = list(pipe_iterator)
 
