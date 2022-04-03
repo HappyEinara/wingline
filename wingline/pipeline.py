@@ -3,46 +3,77 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Optional
+from typing import Optional, Union
 
 from wingline import graph
+from wingline.cache import intermediate
 from wingline.files import containers, file, formats
-from wingline.plumbing import tap
-from wingline.plumbing.pipes import processpipe
+from wingline.plumbing import pipe, tap
+from wingline.plumbing.pipes import cachewriter, processpipe
 from wingline.plumbing.sinks import iteratorsink, writersink
 from wingline.plumbing.taps import filetap
-from wingline.types import PayloadIterator, PipeProcess, Source
+from wingline.types import PayloadIterable, PayloadIterator, PipeProcess
 
 
 class Pipeline:
+    """Fluent interface to a pipeline at a specific node."""
     def __init__(
         self,
         source: Source,
         *processes: PipeProcess,
         name: Optional[str] = None,
+        cache_dir:Optional[pathlib.Path] = None,
+        at_node: Optional[pipe.Pipe] = None
     ):
+        if isinstance(source, Pipeline):
+            if at_node is None:
+                raise ValueError("Cloned pipelines must provide `at_node`")
+            self.name = source.name
+            self.cache_dir = source.cache_dir
+            self.graph = source.graph
+            self.at: pipe.Pipe = at_node
+        else:
+            self.name = name if name is not None else f"wingline-{id(self)}"
+            self.cache_dir = cache_dir
+            self.graph = graph.PipelineGraph(self.name)
+            source_node = self._get_source_node(source)
+            self.graph.add_node(source_node)
+            self.at = source_node
+            for process in processes:
+                self.at = self.process(process).at
 
-        self.name = name if name is not None else f"wingline-{id(self)}"
+    def _get_source_node(self, source: Source) -> tap.Tap:
+        """Interpret the source to create the initial node of a new pipeline."""
 
         if isinstance(source, pathlib.Path):
             source_file = file.File(source)
-            name = f"source-{source_file.stem}"
-            self._pipe = filetap.FileTap(source_file, name=name)
+        elif isinstance(source, file.File):
+            source_file = source
         else:
             name = f"source-{source.__class__.__name__}"
-            self._pipe = tap.Tap(source, name=name)
+            source_node = tap.Tap(source, name=name)
+            return source_node
 
-        for process in processes:
-            self.process(process)
+        name = f"source-{source_file.stem}"
+        source_node = filetap.FileTap(source_file, name=name)
+        return source_node
 
     def process(self, process: PipeProcess) -> Pipeline:
         """Fluent interface to add a process."""
 
-        if self._pipe.started:
+        if self.graph.started:
             raise RuntimeError("Can't add processes after pipeline has started.")
 
-        self._pipe = processpipe.ProcessPipe(self._pipe, process)
-        return self
+        new_pipe = processpipe.ProcessPipe(self.at, process)
+        self.graph.add_node(new_pipe)
+        if self.cache_dir:
+            cache_path = intermediate.get_cache_path(new_pipe.hash, self.cache_dir)
+            if cache_path.exists():
+                pass
+            else:
+                new_pipe = cachewriter.CacheWriter(new_pipe, cache_path)
+                self.graph.add_node(new_pipe)
+        return Pipeline(self, at_node=new_pipe)
 
     def write(
         self,
@@ -53,44 +84,35 @@ class Pipeline:
     ) -> Pipeline:
         """Fluent interface to add a file writer."""
 
-        if self._pipe.started:
+        if self.graph.started:
             raise RuntimeError("Can't add writers after pipeline has started.")
-        name = name if name is not None else f"writer-{self._pipe.name}"
-        self._pipe = writersink.WriterSink(
-            self._pipe,
+
+        name = name if name is not None else f"writer-{self.at.name}"
+
+        new_pipe = writersink.WriterSink(
+            self.at,
             output_file,
             name=name,
             format_type=format,
             container_type=container,
         )
-        return self
-
-    @property
-    def started(self):
-        """Read-only property. True if the pipe has started."""
-
-        return self._pipe.started
-
-    @property
-    def graph(self):
-        """Get the graph for the pipeline."""
-
-        return graph.PipelineGraph(self)
+        self.graph.add_node(new_pipe)
+        return Pipeline(self, at_node=new_pipe)
 
     def run(self):
-        """Run the pipeline."""
+        """Run the graph."""
 
-        if self.started:
-            raise RuntimeError("Pipeline has already started!")
-        self._pipe.start()
-        self._pipe.join()
+        self.graph.run()
 
     def __iter__(self) -> PayloadIterator:
-        """Iterate over the result of the pipeline."""
+        """Iterate over the node."""
 
-        if self.started:
+        if self.graph.started:
             raise RuntimeError("Pipeline has already started.")
 
-        name = f"iter-{self.name}"
-        self._pipe = iteratorsink.IteratorSink(self._pipe, name=name)
-        return iter(self._pipe)
+        name = f"iter-{self.at.name}"
+        new_pipe = iteratorsink.IteratorSink(self.at, name=name)
+        self.graph.add_node(new_pipe)
+        return iter(new_pipe)
+
+Source = Union[pathlib.Path, PayloadIterable, PayloadIterator, Pipeline, file.File]

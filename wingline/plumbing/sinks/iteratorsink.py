@@ -20,3 +20,4 @@ class IteratorSink(sink.Sink):
             self._iter_queue.task_done()
             if payload is SENTINEL:
                 break
+        self.join()

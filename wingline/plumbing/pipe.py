@@ -69,6 +69,7 @@ class Pipe:
         self._started = False
         self.parent.add_child(self)
         self.hash = self.parent.hash
+        self.cache_dir = parent.cache_dir
 
     def add_child(self, other: Pipe) -> None:
         """Register a child so it's input queue receives this pipe's output."""

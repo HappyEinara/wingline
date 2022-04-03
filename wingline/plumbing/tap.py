@@ -1,8 +1,10 @@
-"""Tap class."""
 
+"""Tap class."""
 from __future__ import annotations
 
 import collections.abc
+import pathlib
+from typing import Optional
 
 from wingline import hasher
 from wingline.plumbing import queue
@@ -15,7 +17,7 @@ class Tap(Pipe):
 
     emoji = "﹛﹜↦"
 
-    def __init__(self, source: PayloadIterable, name: str) -> None:
+    def __init__(self, source: PayloadIterable, name: str, cache_dir: Optional[pathlib.Path] = None) -> None:
         self.name = name
         self.source = source
         self.children: set[Pipe] = set()
@@ -27,6 +29,7 @@ class Tap(Pipe):
             if isinstance(source, collections.abc.Sequence)
             else None
         )
+        self.cache_dir = cache_dir
 
     def start(self) -> None:
         """Start the process."""

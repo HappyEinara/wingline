@@ -30,7 +30,7 @@ def test_pipeline(input, expected, func_add_one):
     assert result == expected
 
 
-def test_pipeline_fluent(input, expected):
+def test_pipeline_fluent(input, func_add_one, expected):
     """The fluent interface works."""
 
     test_pipeline = wingline.Pipeline(input).process(func_add_one).process(func_add_one)

@@ -8,6 +8,7 @@ from typing import Any, Generator, Optional
 
 from wingline import hasher
 from wingline.files import containers, filetype, formats
+from wingline.types import PayloadIterator
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ class File:
             for line in reader:
                 yield line
 
-    def __iter__(self) -> Generator[dict[str, Any], None, None]:
+    def __iter__(self) -> PayloadIterator:
         """Return self to be used as an iterator."""
 
         return self._iterator()

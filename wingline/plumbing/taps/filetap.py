@@ -1,6 +1,9 @@
 """FileTap class."""
 from __future__ import annotations
 
+import pathlib
+from typing import Optional
+
 from wingline.files import file
 from wingline.plumbing import tap
 
@@ -10,6 +13,6 @@ class FileTap(tap.Tap):
 
     emoji = "📄↦"
 
-    def __init__(self, source_file: file.File, name: str) -> None:
-        super().__init__(source_file, name)
+    def __init__(self, source_file: file.File, name: str, cache_dir: Optional[pathlib.Path] = None) -> None:
+        super().__init__(source_file, name, cache_dir=cache_dir)
         self.hash = source_file.content_hash

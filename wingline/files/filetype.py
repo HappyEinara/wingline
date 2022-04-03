@@ -71,6 +71,6 @@ def get_writer(
     format: Optional[type[formats.Format]] = None,
     container: Optional[type[containers.Container]] = None,
 ) -> writer.Writer:
-    """Get a reader for the file."""
+    """Get a writer for the file."""
 
     return writer.Writer(path, format=format, container=container)

@@ -35,7 +35,7 @@ def render_pipe(pipe: pipe.Pipe):
 def graph_tree(graph: graph.PipelineGraph):
     """Pretty print a tree of the graph."""
 
-    tree = rich.tree.Tree(graph.pipeline.name)
+    tree = rich.tree.Tree(graph.name)
 
     def add_graph(tree, graph_dict):
         for node, children in graph_dict.items():

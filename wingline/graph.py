@@ -1,36 +1,51 @@
 """Class to represent pipelines as a graph."""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from wingline.plumbing import pipe, sink, tap
 
-if TYPE_CHECKING:
-    from wingline import pipeline
+GraphDict = dict[pipe.Pipe, list[pipe.Pipe]] 
 
 
 class PipelineGraph:
-    def __init__(self, pipeline: pipeline.Pipeline):
-        self.pipeline = pipeline
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self._graph: GraphDict = {}
+
+
+    def add_node(self, node: pipe.Pipe) -> None:
+        """Add a node to the graph."""
+
+        def _add_children(graph: GraphDict, node: pipe.Pipe):
+            """Recursively add child nodes."""
+
+            graph.setdefault(node, [])
+            if getattr(node, "parent", None):
+                graph.setdefault(node.parent, []).append(node)
+            for child in node.children:
+                _add_children(graph, child)
+
+        _add_children(self._graph, node)
 
     @property
-    def _graph(self) -> dict[pipe.Pipe, list[pipe.Pipe]]:
-        """Return the graph as a dict."""
+    def started(self):
+        """Read-only property. True if the pipe has started."""
 
-        at: pipe.Pipe = self.pipeline._pipe
-        while hasattr(at, "parent"):
-            at = at.parent
-        apex_node = at
+        return any(node.started for node in self._graph)
 
-        def _populate_children(node, graph):
-            for child in node.children:
-                graph.setdefault(node, []).append(child)
-                _populate_children(child, graph)
+    def run(self):
+        """Run the pipeline."""
 
-        graph = {}
-        _populate_children(apex_node, graph)
+        if self.started:
+            raise RuntimeError("Pipeline has already started!")
 
-        return graph
+        for sink in self.sinks:
+            sink.start()
+        for sink in self.sinks:
+            sink.join()
 
     @property
     def taps(self) -> set[pipe.Pipe]:
