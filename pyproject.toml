@@ -20,15 +20,14 @@ exclude = ["settings.py"]
 
 [tool.poetry.dependencies]
 python = "^3.7.0"
-fastapi = "^0.65.2"
-pydantic = "^1.8.1"
-requests = "^2.25.1"
 filetype = "^1.0.10"
 cachelib = "^0.6.0"
 dill = "^0.3.4"
 msgpack = "^1.0.3"
 rich = { version = "^12.0.1", optional = true }
-pytest-cases = {version = "^3.6.11", optional = true}
+pytest-cases = { version = "^3.6.11", optional = true }
+msgpack-types = { version = "^0.2.0", optional = true }
+pydantic = "^1.9.0"
 
 [tool.poetry.dev-dependencies]
 nox = "^2021.10.1 "
@@ -47,6 +46,7 @@ lint = [
   "pre-commit",
   "isort",
   "black",
+  "msgpack-types",
 ]
 security = ["bandit", "safety"]
 tests = [

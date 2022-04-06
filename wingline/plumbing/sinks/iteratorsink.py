@@ -1,8 +1,12 @@
 """Pipe iterator class."""
 from __future__ import annotations
 
+import logging
+
 from wingline.plumbing import queue, sink
 from wingline.types import SENTINEL, PayloadIterator
+
+logger = logging.getLogger(__name__)
 
 
 class IteratorSink(sink.Sink):

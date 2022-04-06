@@ -13,6 +13,11 @@ class FileTap(tap.Tap):
 
     emoji = "📄↦"
 
-    def __init__(self, source_file: file.File, name: str, cache_dir: Optional[pathlib.Path] = None) -> None:
+    def __init__(
+        self,
+        source_file: file.File,
+        name: str,
+        cache_dir: Optional[pathlib.Path] = None,
+    ) -> None:
         super().__init__(source_file, name, cache_dir=cache_dir)
         self.hash = source_file.content_hash

@@ -5,13 +5,13 @@ import hashlib
 import pathlib
 from typing import Any, Callable
 
-import dill as pickle  # nosec B403
+import dill as pickle  # type: ignore # nosec B403
 
 DIGEST_SIZE = 8
 HASH_BLOCK_SIZE = 4096
 
 
-def hasher(data: bytes = b"", digest_size=8, **kwargs):
+def hasher(data: bytes = b"", digest_size: int = 8, **kwargs: Any) -> Any:
     return hashlib.blake2b(data, digest_size=digest_size, **kwargs)
 
 
@@ -36,7 +36,7 @@ def _hash_object(obj: object) -> str:
     return obj_hash
 
 
-def hash_sequence(sequence: collections.abc.Sequence) -> str:
+def hash_sequence(sequence: collections.abc.Sequence[Any]) -> str:
     """Hash a sequence."""
 
     return _hash_object(sequence)

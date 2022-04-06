@@ -1,21 +1,24 @@
 """Test the Pipeline.write interface."""
 
+import random
 import threading
 
 import pytest
 
 import wingline
+from wingline import json
+from wingline.files import containers, formats
 
 CASES = (
     (
         [
             {"a": 1, "b": 1, "c": 1},
-            {"d": 1, "e": 1, "f": 1},
+            {"a": 2, "b": 2, "c": 2},
         ],
         "\n".join(
             [
                 '{"a": 3, "b": 3, "c": 3}',
-                '{"d": 3, "e": 3, "f": 3}',
+                '{"a": 4, "b": 4, "c": 4}',
             ]
         )
         + "\n",
@@ -52,3 +55,54 @@ def test_write_fluent(input, expected, func_add_one, tmp_path):
 
     result = output_files[0].read_text()
     assert result == expected
+
+
+@pytest.mark.parametrize("input,expected", CASES)
+@pytest.mark.parametrize(
+    "container", [None, containers.Bare, containers.Gzip, containers.Zip]
+)
+@pytest.mark.parametrize("format", [formats.JsonLines, formats.Csv, formats.Msgpack])
+def test_write_formats(input, expected, func_add_one, tmp_path, container, format):
+    """All formats and containers work."""
+
+    container_suffix = (
+        random.choice(list(container.suffixes))
+        if container and container.suffixes
+        else ""
+    )
+    format_suffix = random.choice(list(format.suffixes))
+    output_file = tmp_path / f"test_formats{format_suffix}{container_suffix}"
+
+    # TODO
+    # Write files to the format
+    # and then compress them into containers after
+    # There's no need to go to the effort of
+    # using containers as fps
+    test_pipeline = (
+        wingline.Pipeline(input)
+        .process(func_add_one)
+        .process(func_add_one)
+        .write(
+            output_file, container=(container() if container else None), format=format()
+        )
+    )
+
+    test_pipeline.run()
+
+    # There should only be the main thread left
+    # Check the threading module's reports are
+    # consistent with that.
+    assert threading.active_count() == 1
+    assert (
+        threading.enumerate()[0]
+        == threading.main_thread()
+        == threading.current_thread()
+    )
+
+    assert output_file.exists()
+    reread = [
+        {k: int(v) for k, v in payload.items()}
+        for payload in wingline.Pipeline(output_file)
+    ]
+    expected_obj = [json.loads(line) for line in expected.strip().split("\n")]
+    assert reread == expected_obj

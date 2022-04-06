@@ -3,7 +3,7 @@
 import contextlib
 import pathlib
 import zipfile
-from typing import BinaryIO, Generator, cast
+from typing import Any, BinaryIO, Generator, cast
 
 from wingline.files.containers import _base
 
@@ -12,22 +12,23 @@ class Zip(_base.Container):
     """Zip container"""
 
     mime_type = "application/zip"
-    suffixes = {".zip"}
+    suffixes = [".zip"]
 
-    @contextlib.contextmanager
     @staticmethod
-    def _get_handle(path: pathlib.Path) -> Generator[BinaryIO, None, None]:
+    @contextlib.contextmanager
+    def read(path: pathlib.Path, **_: Any) -> Generator[BinaryIO, None, None]:
         """Return a file handle."""
 
         zip = zipfile.Path(path)
-        zipped_file = next(zip.iterdir())
+        zipped_file = next(iter((f for f in zip.iterdir() if f.is_file())))
         with zipped_file.open("rb") as handle:
             yield cast(BinaryIO, handle)
 
     @staticmethod
     @contextlib.contextmanager
-    def _get_write_handle(path: pathlib.Path) -> Generator[BinaryIO, None, None]:
+    def write(path: pathlib.Path, **_: Any) -> Generator[BinaryIO, None, None]:
         """Return a file handle for writing."""
 
-        with gzip.open(path, "wb") as handle:
-            yield cast(BinaryIO, handle)
+        with zipfile.ZipFile(path, "w") as zip:
+            with zip.open(path.stem, "w") as handle:
+                yield cast(BinaryIO, handle)

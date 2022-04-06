@@ -1,4 +1,3 @@
-
 """Tap class."""
 from __future__ import annotations
 
@@ -13,11 +12,16 @@ from wingline.types import SENTINEL, PayloadIterable
 
 
 class Tap(Pipe):
-    """A Pipe subclass that has no parent and generates output from some other source."""
+    """A Pipe subclass with no parent, generating output from some other source."""
 
     emoji = "﹛﹜↦"
 
-    def __init__(self, source: PayloadIterable, name: str, cache_dir: Optional[pathlib.Path] = None) -> None:
+    def __init__(
+        self,
+        source: PayloadIterable,
+        name: str,
+        cache_dir: Optional[pathlib.Path] = None,
+    ) -> None:
         self.name = name
         self.source = source
         self.children: set[Pipe] = set()
@@ -33,8 +37,7 @@ class Tap(Pipe):
 
     def start(self) -> None:
         """Start the process."""
-        if self._started:
-            return
+
         self.thread = PipeThread(
             input_queue=self.input_queue,
             output_queues=self._output_queues,
@@ -49,7 +52,7 @@ class Tap(Pipe):
             self.input_queue.put(payload)
         self.input_queue.put(SENTINEL)
 
-    def join(self):
+    def join(self) -> None:
         """Wait for the process to complete."""
         if not self._started:
             raise RuntimeError("Can't join a pipe that hasn't started.")

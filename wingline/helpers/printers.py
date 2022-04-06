@@ -5,9 +5,9 @@ import pprint
 from wingline.types import PayloadIterable
 
 
-def pretty(parent: PayloadIterable) -> PayloadIterable:
+def pretty(payloads: PayloadIterable) -> PayloadIterable:
     """Pretty print the payload"""
 
-    for payload in parent:
+    for payload in payloads:
         pprint.pprint(payload)
         yield payload

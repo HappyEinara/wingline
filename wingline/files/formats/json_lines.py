@@ -1,27 +1,50 @@
 """The JSONline adapter."""
 
-from typing import Any, BinaryIO, Iterable
+import contextlib
+from typing import Any, BinaryIO, Callable, Generator
 
 from wingline.files.formats import _base
 from wingline.json import json
-from wingline.types import Payload
+from wingline.types import Payload, PayloadIterator
 
 
 class JsonLines(_base.Format):
     """JSONlines format."""
 
     mime_type = "application/json"
-    suffixes = {".json", ".jl", ".jsonl"}
+    suffixes = [".jsonl", ".jl", ".json"]
 
-    def read(self, handle: BinaryIO) -> Iterable[dict[str, Any]]:
+    @contextlib.contextmanager
+    def read(
+        self, fp: BinaryIO, **default_kwargs: Any
+    ) -> Generator[Callable[..., PayloadIterator], None, None]:
         """Dict iterator."""
 
-        for line in handle:
-            yield json.loads(line)
+        def _read(**kwargs: Any) -> PayloadIterator:
+            """Innermost reader."""
 
-    def write(self, handle: BinaryIO, payload: Payload) -> None:
+            # When py3.8 reaches EOL:
+            # payload_kwargs = kwargs | payload_kwargs
+            kwargs = {**default_kwargs, **kwargs}
+            for line in fp:
+                yield json.loads(line, **kwargs)
+
+        yield _read
+
+    @contextlib.contextmanager
+    def write(
+        self, fp: BinaryIO, **default_kwargs: Any
+    ) -> Generator[Callable[..., None], None, None]:
         """Writer."""
 
-        handle.write(
-            (json.dumps(payload, default=str, sort_keys=True) + "\n").encode("utf-8")
-        )
+        default_kwargs.setdefault("sort_keys", True)
+
+        def _write(payload: Payload, **kwargs: Any) -> None:
+            """Innermost writer."""
+
+            # When py3.8 reaches EOL:
+            # kwargs = default_kwargs | kwargs
+            kwargs = {**default_kwargs, **kwargs}
+            fp.write((json.dumps(payload, **kwargs) + "\n").encode("utf-8"))
+
+        yield _write

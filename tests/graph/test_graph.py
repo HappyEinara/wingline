@@ -22,8 +22,8 @@ CASES = (
 )
 
 
-@pytest.mark.parametrize("input,expected", CASES)
-def test_graph(input, expected, func_add_one, tmp_path):
+@pytest.mark.parametrize("input,_", CASES)
+def test_graph(input, _, func_add_one, tmp_path):
     """The fluent interface works."""
 
     output_file = tmp_path / "test-write-fluent-output.jl"
@@ -35,6 +35,9 @@ def test_graph(input, expected, func_add_one, tmp_path):
     )
 
     graph = test_pipeline.graph.dict
+    # TODO validate this better when the graph is
+    # stable.
+    assert len(graph) == 1
 
     # There should only be the main thread left
     # Check the threading module's reports are
@@ -45,3 +48,20 @@ def test_graph(input, expected, func_add_one, tmp_path):
         == threading.main_thread()
         == threading.current_thread()
     )
+
+
+@pytest.mark.parametrize("input,_", CASES)
+def test_start_twice(input, _, func_add_one, tmp_path):
+    """Starting twice raises."""
+
+    output_file = tmp_path / "test-write-fluent-output.jl"
+    test_pipeline = (
+        wingline.Pipeline(input)
+        .process(func_add_one)
+        .process(func_add_one)
+        .write(output_file)
+    )
+
+    list(test_pipeline.graph.taps)[0].start()
+    with pytest.raises(RuntimeError):
+        test_pipeline.graph.run()

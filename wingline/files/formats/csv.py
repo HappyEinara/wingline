@@ -1,58 +1,84 @@
 """The CSV adapter."""
 
+import contextlib
 import csv
 import io
-from typing import BinaryIO, Iterable
+from typing import Any, BinaryIO, Callable, Generator
 
 from wingline.files.formats import _base
-from wingline.types import Payload
+from wingline.types import Payload, PayloadIterator
 
 
 class Csv(_base.Format):
     """CSV format."""
 
     mime_type = "application/csv"
-    suffixes = {".csv"}
+    suffixes = [".csv"]
 
-    fieldnames = None
-    restkey = "(rest)"
-    restval = None
-    dialect = "excel"
-    extrasaction = "ignore"
-
-    def read(self, handle: BinaryIO, **kwargs) -> Iterable[Payload]:
+    @contextlib.contextmanager
+    def read(
+        self,
+        fp: BinaryIO,
+        **kwargs: Any,
+    ) -> Generator[Callable[..., PayloadIterator], None, None]:
         """Dict iterator"""
 
-        fieldnames = kwargs.get("fieldnames", self.fieldnames)
-        restkey = kwargs.get("restkey", self.restkey)
-        restval = kwargs.get("restval", self.restval)
-        dialect = kwargs.get("dialect", self.dialect)
+        kwargs = {
+            **{
+                "fieldnames": None,
+                "restkey": "(rest)",
+                "restval": None,
+                "dialect": "excel",
+            },
+            **kwargs,
+        }
 
-        text_handle = io.TextIOWrapper(handle, encoding="utf-8")
-        reader = csv.DictReader(
-            text_handle,
-            fieldnames=fieldnames,
-            restkey=restkey,
-            restval=restval,
-            dialect=dialect,
-        )
-        for line in reader:
-            yield line
+        text_handle = io.TextIOWrapper(fp, encoding="utf-8")
+        reader = csv.DictReader(text_handle, **kwargs)
 
-    def write(self, handle: BinaryIO, payload: Payload, **kwargs) -> None:
+        def _read() -> PayloadIterator:
+            """Innermost reader."""
+
+            for line in reader:
+                yield line
+
+        yield _read
+
+    @contextlib.contextmanager
+    def write(
+        self, fp: BinaryIO, **kwargs: Any
+    ) -> Generator[Callable[..., None], None, None]:
         """File writer."""
 
-        fieldnames = kwargs.get("fieldnames", self.fieldnames)
-        restval = kwargs.get("restval", self.restval)
-        dialect = kwargs.get("dialect", self.dialect)
-        extrasaction = kwargs.get("extrasaction", self.extrasaction)
+        kwargs = {
+            **{
+                "fieldnames": None,
+                "restval": None,
+                "extrasaction": "ignore",
+                "dialect": "excel",
+            },
+            **kwargs,
+        }
 
-        text_handle = io.TextIOWrapper(handle, encoding="utf-8")
-        writer = csv.DictWriter(
-            text_handle,
-            fieldnames=fieldnames,
-            restval=restval,
-            dialect=dialect,
-            extrasaction=extrasaction,
-        )
-        writer.writerow(payload)
+        text_handle = io.TextIOWrapper(fp, encoding="utf-8")
+        fieldnames = kwargs.pop("fieldnames")
+        state = {
+            "writer_initialized": False,
+            "fieldnames": fieldnames,
+            "kwargs": kwargs,
+            "writer": None,
+        }
+
+        def _write(payload: Payload) -> None:
+            """Innermost reader."""
+            writer = state["writer"]
+            if writer is None:
+                fieldnames = state.get("fieldnames") or payload.keys()
+                writer = csv.DictWriter(text_handle, fieldnames, **state["kwargs"])
+                writer.writeheader()
+                state["writer"] = writer
+
+            writer.writerow(payload)
+            text_handle.flush()
+
+        yield _write

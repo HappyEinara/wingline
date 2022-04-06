@@ -17,20 +17,21 @@ from wingline.types import PayloadIterable, PayloadIterator, PipeProcess
 
 class Pipeline:
     """Fluent interface to a pipeline at a specific node."""
+
     def __init__(
         self,
         source: Source,
         *processes: PipeProcess,
         name: Optional[str] = None,
-        cache_dir:Optional[pathlib.Path] = None,
-        at_node: Optional[pipe.Pipe] = None
+        cache_dir: Optional[pathlib.Path] = None,
+        at_node: Optional[pipe.Pipe] = None,
     ):
         if isinstance(source, Pipeline):
             if at_node is None:
                 raise ValueError("Cloned pipelines must provide `at_node`")
-            self.name = source.name
-            self.cache_dir = source.cache_dir
-            self.graph = source.graph
+            self.name: str = source.name
+            self.cache_dir: Optional[pathlib.Path] = source.cache_dir
+            self.graph: graph.PipelineGraph = source.graph
             self.at: pipe.Pipe = at_node
         else:
             self.name = name if name is not None else f"wingline-{id(self)}"
@@ -64,9 +65,9 @@ class Pipeline:
         if self.graph.started:
             raise RuntimeError("Can't add processes after pipeline has started.")
 
-        new_pipe = processpipe.ProcessPipe(self.at, process)
+        new_pipe: pipe.Pipe = processpipe.ProcessPipe(self.at, process)
         self.graph.add_node(new_pipe)
-        if self.cache_dir:
+        if self.cache_dir and new_pipe.hash:
             cache_path = intermediate.get_cache_path(new_pipe.hash, self.cache_dir)
             if cache_path.exists():
                 new_pipe = cachereader.CacheReader(new_pipe, cache_path)
@@ -78,8 +79,8 @@ class Pipeline:
     def write(
         self,
         output_file: pathlib.Path,
-        format: Optional[type[formats.Format]] = None,
-        container: Optional[type[containers.Container]] = None,
+        format: Optional[formats.Format] = None,
+        container: Optional[containers.Container] = None,
         name: Optional[str] = None,
     ) -> Pipeline:
         """Fluent interface to add a file writer."""
@@ -93,13 +94,13 @@ class Pipeline:
             self.at,
             output_file,
             name=name,
-            format_type=format,
-            container_type=container,
+            format=format,
+            container=container,
         )
         self.graph.add_node(new_pipe)
         return Pipeline(self, at_node=new_pipe)
 
-    def run(self):
+    def run(self) -> None:
         """Run the graph."""
 
         self.graph.run()
@@ -114,5 +115,6 @@ class Pipeline:
         new_pipe = iteratorsink.IteratorSink(self.at, name=name)
         self.graph.add_node(new_pipe)
         return iter(new_pipe)
+
 
 Source = Union[pathlib.Path, PayloadIterable, PayloadIterator, Pipeline, file.File]

@@ -1,27 +1,46 @@
 """The MessagePack adapter."""
 
-from typing import Any, BinaryIO, Iterable
+import contextlib
+from typing import Any, BinaryIO, Callable, Generator
 
 import msgpack
 
 from wingline.files.formats import _base
-from wingline.types import Payload
+from wingline.types import Payload, PayloadIterator
 
 
 class Msgpack(_base.Format):
     """Msgpack format."""
 
     mime_type = "application/x-msgpack"
-    suffixes = {".wingline", ".msgpack"}
+    suffixes = [".msgpack", ".wingline"]
 
-    def read(self, handle: BinaryIO) -> Iterable[dict[str, Any]]:
+    @contextlib.contextmanager
+    def read(
+        self, fp: BinaryIO, **kwargs: Any
+    ) -> Generator[Callable[..., PayloadIterator], None, None]:
         """Dict iterator."""
 
-        unpacker = msgpack.Unpacker(handle)
-        for item in unpacker:
-            yield item
+        kwargs.setdefault("strict_map_key", False)
 
-    def write(self, handle: BinaryIO, payload: Payload) -> None:
+        unpacker = msgpack.Unpacker(fp)
+
+        def _read() -> PayloadIterator:
+            """Innermost reader."""
+
+            for item in unpacker:
+                yield item
+
+        yield _read
+
+    @contextlib.contextmanager
+    def write(
+        self, fp: BinaryIO, **kwargs: Any
+    ) -> Generator[Callable[..., None], None, None]:
         """Writer."""
 
-        handle.write(msgpack.packb(payload))
+        def _write(payload: Payload) -> None:
+            msg = msgpack.packb(payload)
+            fp.write(msg)
+
+        yield _write

@@ -1,5 +1,4 @@
 """Test the graph."""
-import threading
 
 import pytest
 import rich.console

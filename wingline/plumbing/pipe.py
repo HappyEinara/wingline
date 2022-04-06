@@ -1,11 +1,15 @@
 """Base pipe class."""
 from __future__ import annotations
 
+import logging
+import pathlib
 import threading
-from typing import Callable
+from typing import Callable, Optional
 
 from wingline.plumbing import queue
-from wingline.types import SENTINEL, Payload, PayloadIterator, PipeProcess
+from wingline.types import SENTINEL, PayloadIterator, PipeProcess
+
+logger = logging.getLogger(__name__)
 
 
 class PipeThread(threading.Thread):
@@ -27,22 +31,25 @@ class PipeThread(threading.Thread):
         super().__init__()
         self.name = f"<T {self.parent_name}>"
 
+    def _iter_input(self) -> PayloadIterator:
+        while True:
+            payload = self.input_queue.get()
+            if payload is not SENTINEL:
+                yield payload
+                self.input_queue.task_done()
+            else:
+                self.input_queue.task_done()
+                break
+
     def run(self) -> None:
         """Run the thread."""
 
         self.setup()
-        while True:
-            payload = self.input_queue.get()
-            if payload is not SENTINEL:
-                for output_payload in self.process(payload):
-                    for output_queue in self.output_queues:
-                        output_queue.put(output_payload)
-            else:
-                for output_queue in self.output_queues:
-                    output_queue.put(SENTINEL)
-            self.input_queue.task_done()
-            if payload is SENTINEL:
-                break
+        for output_payload in self.process(self._iter_input()):
+            for output_queue in self.output_queues:
+                output_queue.put(output_payload)
+        for output_queue in self.output_queues:
+            output_queue.put(SENTINEL)
 
         self.teardown()
 
@@ -68,8 +75,8 @@ class Pipe:
         )
         self._started = False
         self.parent.add_child(self)
-        self.hash = self.parent.hash
-        self.cache_dir = parent.cache_dir
+        self.hash: Optional[str] = self.parent.hash
+        self.cache_dir: Optional[pathlib.Path] = parent.cache_dir
 
     def add_child(self, other: Pipe) -> None:
         """Register a child so it's input queue receives this pipe's output."""
@@ -77,7 +84,7 @@ class Pipe:
         self.children.add(other)
         self._output_queues.add(other.input_queue)
 
-    def start(self):
+    def start(self) -> None:
         """Start the process."""
         self.parent.start()
         if self._started:
@@ -85,7 +92,7 @@ class Pipe:
         self._started = True
         self.thread.start()
 
-    def join(self):
+    def join(self) -> None:
         """Wait for the process to complete."""
         if not self._started:
             raise RuntimeError("Can't join a pipe that hasn't started.")
@@ -98,10 +105,11 @@ class Pipe:
 
         return self._started
 
-    def process(self, payload: Payload) -> PayloadIterator:
+    def process(self, payloads: PayloadIterator) -> PayloadIterator:
         """Business logic between input and output."""
 
-        yield payload
+        for payload in payloads:
+            yield payload
 
     def setup(self) -> None:
         pass

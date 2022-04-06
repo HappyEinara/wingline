@@ -3,4 +3,8 @@
 try:
     import ujson as json
 except ImportError:
-    import json
+    import json  # type: ignore
+
+__all__ = [
+    "json",
+]
