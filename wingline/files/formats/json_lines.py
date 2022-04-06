@@ -11,7 +11,6 @@ from wingline.types import Payload, PayloadIterator
 class JsonLines(_base.Format):
     """JSONlines format."""
 
-    mime_type = "application/json"
     suffixes = [".jsonl", ".jl", ".json"]
 
     @contextlib.contextmanager

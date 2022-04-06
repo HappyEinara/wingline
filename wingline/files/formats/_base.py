@@ -10,7 +10,6 @@ from wingline.types import PayloadIterator
 class Format(abc.ABC):
     """Base class for a file format."""
 
-    mime_type: str
     suffixes: list[str]
 
     def __init__(

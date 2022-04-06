@@ -10,7 +10,6 @@ from typing import Any, BinaryIO, Generator, Optional
 class Container(abc.ABC):
     """Base class for a file container."""
 
-    mime_type: str
     suffixes: list[str]
 
     def __init__(

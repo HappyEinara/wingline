@@ -12,7 +12,6 @@ from wingline.types import Payload, PayloadIterator
 class Msgpack(_base.Format):
     """Msgpack format."""
 
-    mime_type = "application/x-msgpack"
     suffixes = [".msgpack", ".wingline"]
 
     @contextlib.contextmanager

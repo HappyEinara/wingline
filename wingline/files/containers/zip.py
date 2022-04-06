@@ -11,7 +11,6 @@ from wingline.files.containers import _base
 class Zip(_base.Container):
     """Zip container"""
 
-    mime_type = "application/zip"
     suffixes = [".zip"]
 
     @staticmethod

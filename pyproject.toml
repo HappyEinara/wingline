@@ -16,7 +16,7 @@ known_first_party = "wingline"
 
 [tool.vulture]
 paths = ["wingline", "tests"]
-exclude = ["settings.py"]
+exclude = ["settings.py", "tests/files/test_file_cases.py"]
 
 [tool.poetry.dependencies]
 python = "^3.7.0"

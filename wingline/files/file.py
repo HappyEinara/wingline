@@ -47,13 +47,15 @@ class File:
 
     @property
     def size(self) -> Optional[int]:
-        if stat := self.stat:
+        stat = self.stat
+        if stat:
             return stat.st_size
         return None
 
     @property
     def modified_at(self) -> Optional[int]:
-        if stat := self.stat:
+        stat = self.stat
+        if stat:
             return stat.st_mtime_ns
         return None
 

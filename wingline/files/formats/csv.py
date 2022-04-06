@@ -12,7 +12,6 @@ from wingline.types import Payload, PayloadIterator
 class Csv(_base.Format):
     """CSV format."""
 
-    mime_type = "application/csv"
     suffixes = [".csv"]
 
     @contextlib.contextmanager

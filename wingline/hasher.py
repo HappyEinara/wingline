@@ -1,9 +1,8 @@
 """File hasher."""
 
-import collections.abc
 import hashlib
 import pathlib
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 import dill as pickle  # type: ignore # nosec B403
 
@@ -11,7 +10,7 @@ DIGEST_SIZE = 8
 HASH_BLOCK_SIZE = 4096
 
 
-def hasher(data: bytes = b"", digest_size: int = 8, **kwargs: Any) -> Any:
+def hasher(data: bytes = b"", digest_size: int = DIGEST_SIZE, **kwargs: Any) -> Any:
     return hashlib.blake2b(data, digest_size=digest_size, **kwargs)
 
 
@@ -20,8 +19,10 @@ def hash_file(path: pathlib.Path) -> str:
 
     file_hash = hasher()
     with path.open("rb") as handle:
-        while chunk := handle.read(HASH_BLOCK_SIZE):
+        chunk = handle.read(HASH_BLOCK_SIZE)
+        while chunk:
             file_hash.update(chunk)
+            chunk = handle.read(HASH_BLOCK_SIZE)
     return file_hash.hexdigest()
 
 
@@ -36,7 +37,7 @@ def _hash_object(obj: object) -> str:
     return obj_hash
 
 
-def hash_sequence(sequence: collections.abc.Sequence[Any]) -> str:
+def hash_sequence(sequence: Sequence[Any]) -> str:
     """Hash a sequence."""
 
     return _hash_object(sequence)
