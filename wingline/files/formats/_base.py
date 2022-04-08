@@ -17,11 +17,9 @@ class Format(abc.ABC):
 
     def __init__(
         self,
-        read_kwargs: Optional[Dict[str, Any]] = None,
-        write_kwargs: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
-        self._read_kwargs = read_kwargs if read_kwargs is not None else {}
-        self._write_kwargs = write_kwargs if write_kwargs is not None else {}
+        self._kwargs = kwargs
 
     @contextlib.contextmanager
     def read_manager(
@@ -34,7 +32,7 @@ class Format(abc.ABC):
 
         # When py3.8 reaches EOL:
         # kwargs = self._read_kwargs | kwargs
-        kwargs = {**self._read_kwargs, **kwargs}
+        kwargs = {**self._kwargs, **kwargs}
         with self.read(handle, **kwargs) as reader:
             yield reader
 
@@ -49,7 +47,7 @@ class Format(abc.ABC):
 
         # When py3.8 reaches EOL:
         # kwargs = self._write_kwargs | kwargs
-        kwargs = {**self._write_kwargs, **kwargs}
+        kwargs = {**self._kwargs, **kwargs}
         with self.write(handle, **kwargs) as writer:
             yield writer
 
