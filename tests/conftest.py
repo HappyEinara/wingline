@@ -1,7 +1,7 @@
 """Test fixtures."""
 
 import pathlib
-from typing import Any, Iterable
+from typing import Any, Iterable, Tuple
 
 from pytest_cases import fixture, parametrize
 
@@ -44,7 +44,7 @@ def unrecognizable_file():
     return data_dir() / "deliberately-unrecognizable-file.wtf"
 
 
-def files() -> Iterable[tuple[Any, ...]]:
+def files() -> Iterable[Tuple[Any, ...]]:
     """All test file details."""
 
     dir = data_dir()

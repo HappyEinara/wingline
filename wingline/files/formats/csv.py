@@ -1,4 +1,5 @@
 """The CSV adapter."""
+# pylint: disable=duplicate-code
 
 import contextlib
 import csv
@@ -17,7 +18,7 @@ class Csv(_base.Format):
     @contextlib.contextmanager
     def read(
         self,
-        fp: BinaryIO,
+        handle: BinaryIO,
         **kwargs: Any,
     ) -> Generator[Callable[..., PayloadIterator], None, None]:
         """Dict iterator"""
@@ -32,7 +33,7 @@ class Csv(_base.Format):
             **kwargs,
         }
 
-        text_handle = io.TextIOWrapper(fp, encoding="utf-8")
+        text_handle = io.TextIOWrapper(handle, encoding="utf-8")
         reader = csv.DictReader(text_handle, **kwargs)
 
         def _read() -> PayloadIterator:
@@ -45,13 +46,12 @@ class Csv(_base.Format):
 
     @contextlib.contextmanager
     def write(
-        self, fp: BinaryIO, **kwargs: Any
+        self, handle: BinaryIO, **kwargs: Any
     ) -> Generator[Callable[..., None], None, None]:
         """File writer."""
 
         kwargs = {
             **{
-                "fieldnames": None,
                 "restval": None,
                 "extrasaction": "ignore",
                 "dialect": "excel",
@@ -59,8 +59,8 @@ class Csv(_base.Format):
             **kwargs,
         }
 
-        text_handle = io.TextIOWrapper(fp, encoding="utf-8")
-        fieldnames = kwargs.pop("fieldnames")
+        text_handle = io.TextIOWrapper(handle, encoding="utf-8")
+        fieldnames = kwargs.pop("fieldnames", {})
         state = {
             "writer_initialized": False,
             "fieldnames": fieldnames,
@@ -72,7 +72,9 @@ class Csv(_base.Format):
             """Innermost reader."""
             writer = state["writer"]
             if writer is None:
-                fieldnames = state.get("fieldnames") or payload.keys()
+                fieldnames = state.get("fieldnames")
+                if not fieldnames:
+                    fieldnames = payload.keys()
                 writer = csv.DictWriter(text_handle, fieldnames, **state["kwargs"])
                 writer.writeheader()
                 state["writer"] = writer

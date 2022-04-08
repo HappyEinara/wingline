@@ -5,7 +5,7 @@ import pathlib
 from typing import Optional
 
 from wingline.files import file
-from wingline.plumbing import tap
+from wingline.plumbing import pipe, tap
 
 
 class FileTap(tap.Tap):
@@ -18,6 +18,7 @@ class FileTap(tap.Tap):
         source_file: file.File,
         name: str,
         cache_dir: Optional[pathlib.Path] = None,
+        parent: Optional[pipe.BasePipe] = None,
     ) -> None:
-        super().__init__(source_file, name, cache_dir=cache_dir)
+        super().__init__(source_file, name, cache_dir=cache_dir, parent=parent)
         self.hash = source_file.content_hash

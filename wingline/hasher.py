@@ -11,6 +11,8 @@ HASH_BLOCK_SIZE = 4096
 
 
 def hasher(data: bytes = b"", digest_size: int = DIGEST_SIZE, **kwargs: Any) -> Any:
+    """Return the standard hashlib hasher for all wingline hashes."""
+
     return hashlib.blake2b(data, digest_size=digest_size, **kwargs)
 
 
@@ -43,13 +45,13 @@ def hash_sequence(sequence: Sequence[Any]) -> str:
     return _hash_object(sequence)
 
 
-def hash_callable(callable: Callable[..., Any]) -> str:
+def hash_callable(callable_to_hash: Callable[..., Any]) -> str:
     """Hash a callable."""
 
-    return _hash_object(callable)
+    return _hash_object(callable_to_hash)
 
 
-def hash_string(input: str) -> str:
+def hash_string(input_str: str) -> str:
     """Hash a string."""
 
-    return hasher(input.encode("utf-8")).hexdigest()
+    return hasher(input_str.encode("utf-8")).hexdigest()

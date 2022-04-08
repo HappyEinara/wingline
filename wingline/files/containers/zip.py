@@ -18,9 +18,17 @@ class Zip(_base.Container):
     def read(path: pathlib.Path, **_: Any) -> Generator[BinaryIO, None, None]:
         """Return a file handle."""
 
-        zip = zipfile.Path(path)
-        zipped_file = next(iter((f for f in zip.iterdir() if f.is_file())))
-        with zipped_file.open("rb") as handle:
+        # When py3.7 is EOL:
+        # zip = zipfile.Path(path)
+        # zipped_file = next(iter((f for f in zip.iterdir() if f.is_file())))
+        # with zipped_file.open("rb") as handle:
+
+        zip_file = zipfile.ZipFile(path)
+        try:
+            zipped_file = next(iter((f for f in zip_file.infolist() if not f.is_dir())))
+        except StopIteration:  # pragma: no cover
+            return
+        with zip_file.open(zipped_file, "r") as handle:
             yield cast(BinaryIO, handle)
 
     @staticmethod
@@ -28,6 +36,6 @@ class Zip(_base.Container):
     def write(path: pathlib.Path, **_: Any) -> Generator[BinaryIO, None, None]:
         """Return a file handle for writing."""
 
-        with zipfile.ZipFile(path, "w") as zip:
-            with zip.open(path.stem, "w") as handle:
+        with zipfile.ZipFile(path, "w") as zip_file:
+            with zip_file.open(path.stem, "w") as handle:
                 yield cast(BinaryIO, handle)

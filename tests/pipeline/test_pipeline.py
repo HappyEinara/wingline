@@ -1,5 +1,7 @@
 """Test the pipeline."""
 
+# pylint: disable=redefined-outer-name,redefined-builtin
+
 import pathlib
 
 import pytest
@@ -10,6 +12,7 @@ import wingline
 
 @fixture
 def input():
+    """Sample input."""
     return [
         {"a": 1, "b": 1, "c": 1},
         {"d": 1, "e": 1, "f": 1},
@@ -18,6 +21,7 @@ def input():
 
 @fixture
 def expected():
+    """Expected output."""
     return [
         {"a": 3, "b": 3, "c": 3},
         {"d": 3, "e": 3, "f": 3},
@@ -55,7 +59,7 @@ def test_pipeline_add_process_after_start(input, func_add_one):
     """Adding a process after starting the pipeline raises."""
 
     test_pipeline = wingline.Pipeline(input).process(func_add_one)
-    test_pipeline.at.start()
+    test_pipeline.at_node.start()
     with pytest.raises(RuntimeError):
         test_pipeline.process(func_add_one)
 
@@ -64,9 +68,9 @@ def test_pipeline_add_writer_after_start(input, func_add_one):
     """Adding a writer after starting the pipeline raises."""
 
     test_pipeline = wingline.Pipeline(input).process(func_add_one)
-    test_pipeline.at.start()
+    test_pipeline.at_node.start()
     with pytest.raises(RuntimeError):
-        test_pipeline.write(pathlib.Path("blah"))
+        test_pipeline.write(pathlib.Path("blah.jsonl"))
 
 
 def test_pipeline_iter_after_start(input, func_add_one):

@@ -1,27 +1,30 @@
 """File writer sink."""
 
-import pathlib
-from typing import Optional
 
-from wingline.files import containers, file, formats
+import pathlib
+from typing import Union
+
+from wingline.files import file as fl
+from wingline.files import writer
 from wingline.plumbing import pipe, sink
-from wingline.types import PayloadIterable, PayloadIterator
+from wingline.types import PayloadIterable, PayloadIterator, WritePointer
 
 
 class WriterSink(sink.Sink):
+    """A sink that writes to a file."""
 
     emoji = "⇥💾"
 
     def __init__(
         self,
-        parent: pipe.Pipe,
-        path: pathlib.Path,
+        parent: pipe.BasePipe,
+        file: Union[pathlib.Path, fl.File],
         name: str,
-        format: Optional[formats.Format] = None,
-        container: Optional[containers.Container] = None,
     ):
         super().__init__(parent, name)
-        self._file = file.File(path, format, container)
+        self._file = file if isinstance(file, fl.File) else fl.File(file)
+        self._writer: writer.Writer
+        self._write: WritePointer
 
     def _open_writer(self) -> None:
         self._writer = self._file.writer()

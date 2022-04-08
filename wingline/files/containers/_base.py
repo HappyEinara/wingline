@@ -1,21 +1,23 @@
 """Container base class"""
+# pylint: disable=duplicate-code
+
 from __future__ import annotations
 
 import abc
 import contextlib
 import pathlib
-from typing import Any, BinaryIO, Generator, Optional
+from typing import Any, BinaryIO, Dict, Generator, List, Optional
 
 
 class Container(abc.ABC):
     """Base class for a file container."""
 
-    suffixes: list[str]
+    suffixes: List[str]
 
     def __init__(
         self,
-        read_kwargs: Optional[dict[str, Any]] = None,
-        write_kwargs: Optional[dict[str, Any]] = None,
+        read_kwargs: Optional[Dict[str, Any]] = None,
+        write_kwargs: Optional[Dict[str, Any]] = None,
     ):
         self._read_kwargs = read_kwargs if read_kwargs is not None else {}
         self._write_kwargs = write_kwargs if write_kwargs is not None else {}
@@ -32,8 +34,8 @@ class Container(abc.ABC):
         # When py3.8 reaches EOL:
         # kwargs = self._read_kwargs | kwargs
         kwargs = {**self._read_kwargs, **kwargs}
-        with self.read(path, **kwargs) as fp:
-            yield fp
+        with self.read(path, **kwargs) as handle:
+            yield handle
 
     @contextlib.contextmanager
     def write_manager(
@@ -50,8 +52,8 @@ class Container(abc.ABC):
         kwargs = {**self._write_kwargs, **kwargs}
 
         path.parent.mkdir(parents=True, exist_ok=True)
-        with self.write(path, **kwargs) as fp:
-            yield fp
+        with self.write(path, **kwargs) as handle:
+            yield handle
 
     @staticmethod
     @contextlib.contextmanager

@@ -25,6 +25,7 @@ def test_writersink(simple_data, tmp_path):
     writer = writersink.WriterSink(pipeline, output_file, "test_iterator")
 
     writer.start()
+    assert writer.started
     writer.join()
 
     # There should only be the main thread left

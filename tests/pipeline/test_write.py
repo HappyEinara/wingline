@@ -7,7 +7,9 @@ import pytest
 
 import wingline
 from wingline import json
-from wingline.files import containers, formats
+from wingline.files import containers, file
+from wingline.files import filetype as ft
+from wingline.files import formats
 
 CASES = (
     (
@@ -73,17 +75,17 @@ def test_write_formats(input, expected, func_add_one, tmp_path, container, forma
     format_suffix = random.choice(list(format.suffixes))
     output_file = tmp_path / f"test_formats{format_suffix}{container_suffix}"
 
-    # TODO
-    # Write files to the format
-    # and then compress them into containers after
-    # There's no need to go to the effort of
-    # using containers as fps
     test_pipeline = (
         wingline.Pipeline(input)
         .process(func_add_one)
         .process(func_add_one)
         .write(
-            output_file, container=(container() if container else None), format=format()
+            file.File(
+                output_file,
+                filetype=ft.Filetype(
+                    container=(container() if container else None), format=format()
+                ),
+            )
         )
     )
 

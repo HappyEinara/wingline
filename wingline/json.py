@@ -1,3 +1,5 @@
+"""Wrapper for json or ujson if available."""
+
 # Try to use ujson
 
 try:

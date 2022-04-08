@@ -13,7 +13,7 @@ class ProcessPipe(pipe.Pipe):
     emoji = "🠞⚙️"
 
     def __init__(
-        self, parent: pipe.Pipe, process: PipeProcess, name: Optional[str] = None
+        self, parent: pipe.BasePipe, process: PipeProcess, name: Optional[str] = None
     ):
         self._process = process
         name = name if name is not None else self._process.__name__

@@ -2,27 +2,29 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, List, Set
 
 from wingline.plumbing import pipe, sink, tap
 
-GraphDict = dict[pipe.Pipe, list[pipe.Pipe]]
+GraphDict = Dict[pipe.BasePipe, List[pipe.BasePipe]]
 
 
 class PipelineGraph:
+    """Represent a pipeline as a directed acyclic graph."""
+
     def __init__(self, name: str) -> None:
         self.name = name
         self._graph: GraphDict = {}
 
-    def add_node(self, node: pipe.Pipe) -> None:
+    def add_node(self, node: pipe.BasePipe) -> None:
         """Add a node to the graph."""
 
-        def _add_children(graph: GraphDict, node: pipe.Pipe) -> None:
+        def _add_children(graph: GraphDict, node: pipe.BasePipe) -> None:
             """Recursively add child nodes."""
 
             graph.setdefault(node, [])
-            if getattr(node, "parent", None):
-                graph.setdefault(node.parent, []).append(node)
+            if node.relationships.parent is not None:
+                graph.setdefault(node.relationships.parent, []).append(node)
 
             # Currently new nodes never have children.
             # Commenting this to satisfy Coverage
@@ -51,39 +53,39 @@ class PipelineGraph:
             next_sink.join()
 
     @property
-    def nodes(self) -> set[pipe.Pipe]:
+    def nodes(self) -> Set[pipe.BasePipe]:
         """Return all the nodes in the graph."""
-        nodes: set[pipe.Pipe] = {node for node in self._graph.keys()}
+        nodes: Set[pipe.BasePipe] = set(node for node in self._graph)
         return nodes
 
     @property
-    def taps(self) -> set[pipe.Pipe]:
+    def taps(self) -> Set[pipe.BasePipe]:
         """Return all the taps in the graph."""
 
-        taps: set[pipe.Pipe] = {
+        taps: Set[pipe.BasePipe] = {
             node for node in self.nodes if isinstance(node, tap.Tap)
         }
         return taps
 
     @property
-    def sinks(self) -> set[pipe.Pipe]:
+    def sinks(self) -> Set[pipe.Pipe]:
         """Return all the sinks in the graph."""
 
-        sinks: set[pipe.Pipe] = {
+        sinks: Set[pipe.Pipe] = {
             node for node in self.nodes if isinstance(node, sink.Sink)
         }
         return sinks
 
     @property
-    def dict(self) -> dict[pipe.Pipe, Any]:
+    def dict(self) -> Dict[pipe.BasePipe, Any]:
         """Return the graph as a nested dict."""
 
-        def add_node(graph: dict[pipe.Pipe, Any], node: pipe.Pipe) -> None:
+        def add_node(graph: Dict[pipe.BasePipe, Any], node: pipe.BasePipe) -> None:
             subgraph = graph.setdefault(node, {})
-            for child in node.children:
+            for child in node.relationships.children:
                 add_node(subgraph, child)
 
-        graph_dict: dict[pipe.Pipe, Any] = {}
+        graph_dict: Dict[pipe.BasePipe, Any] = {}
         for next_tap in self.taps:
             add_node(graph_dict, next_tap)
 

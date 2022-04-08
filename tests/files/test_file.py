@@ -8,6 +8,7 @@ import pytest_cases
 
 from wingline import pipeline
 from wingline.files import file
+from wingline.files import filetype as ft
 from wingline.plumbing.sinks import iteratorsink
 from wingline.plumbing.taps import filetap
 
@@ -22,7 +23,7 @@ def test_filetap(
     if expect_automatic_detection:
         test_file = file.File(path)
     else:
-        test_file = file.File(path, format_type(), container_type())
+        test_file = file.File(path, ft.Filetype(format_type(), container_type()))
     tap = filetap.FileTap(test_file, "test_file_tap")
     pipe_iterator = iteratorsink.IteratorSink(tap, "test_iterator_sink")
 
@@ -98,9 +99,20 @@ def test_filesize(
 def test_write_exists(tmp_path):
     """Attempting to write to an existent file will fail."""
 
-    existent = tmp_path / "existant.jsonl.gzip"
+    existent = tmp_path / "existent.jsonl.gzip"
     existent.touch()
 
     test_file = file.File(existent)
     with pytest.raises(RuntimeError):
         test_file.writer()
+
+
+def test_str_repr(tmp_path):
+    """Test str and repr for pipe raise no exceptions."""
+
+    existent = tmp_path / "existent.jsonl.gzip"
+    existent.touch()
+
+    test_file = file.File(existent)
+    assert str(test_file)
+    assert repr(test_file)

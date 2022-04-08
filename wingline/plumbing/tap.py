@@ -6,12 +6,11 @@ import pathlib
 from typing import Optional
 
 from wingline import hasher
-from wingline.plumbing import queue
-from wingline.plumbing.pipe import Pipe, PipeThread
+from wingline.plumbing import pipe
 from wingline.types import SENTINEL, PayloadIterable
 
 
-class Tap(Pipe):
+class Tap(pipe.BasePipe):
     """A Pipe subclass with no parent, generating output from some other source."""
 
     emoji = "﹛﹜↦"
@@ -21,36 +20,31 @@ class Tap(Pipe):
         source: PayloadIterable,
         name: str,
         cache_dir: Optional[pathlib.Path] = None,
+        parent: Optional[pipe.BasePipe] = None,
     ) -> None:
-        self.name = name
+        relationships = pipe.PipeRelationships(
+            pipe=self,
+            parent=parent,
+            children=set(),
+        )
+        super().__init__(name, relationships, cache_dir=cache_dir)
         self.source = source
-        self.children: set[Pipe] = set()
-        self.input_queue: queue.Queue = queue.Queue()
-        self._output_queues: set[queue.Queue] = set()
-        self._started = False
         self.hash = (
             hasher.hash_sequence(source)
             if isinstance(source, collections.abc.Sequence)
             else None
         )
-        self.cache_dir = cache_dir
 
     def start(self) -> None:
         """Start the process."""
 
-        self.thread = PipeThread(
-            input_queue=self.input_queue,
-            output_queues=self._output_queues,
-            setup=self.setup,
-            process=self.process,
-            teardown=self.teardown,
-            parent_name=self.name,
-        )
-        self.thread.start()
+        if self._started:
+            raise RuntimeError("Attempted to start a pipe for the second time.")
         self._started = True
+        self.thread.start()
         for payload in self.source:
-            self.input_queue.put(payload)
-        self.input_queue.put(SENTINEL)
+            self.queues.input.put(payload)
+        self.queues.input.put(SENTINEL)
 
     def join(self) -> None:
         """Wait for the process to complete."""

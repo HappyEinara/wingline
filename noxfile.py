@@ -60,7 +60,7 @@ def coverage(session):
 def lint_flake8(session):
     """Lint with flake8."""
 
-    files = session.posargs or [PACKAGE_DIR, TESTS_DIR]
+    files = session.posargs or [PACKAGE_DIR]
     session.install("flake8")
     session.run(
         "python",
@@ -88,7 +88,7 @@ def lint_precommit(session):
 def lint_mypy(session):
     """Check types with mypy."""
 
-    files = session.posargs or [PACKAGE_DIR, TESTS_DIR]
+    files = session.posargs or [PACKAGE_DIR]
     session.install(".[tests,lint]")
     session.run(
         "python",
@@ -102,7 +102,7 @@ def lint_mypy(session):
 def lint_pylint(session):
     """Lint with pylint."""
 
-    files = session.posargs or [PACKAGE_DIR, TESTS_DIR]
+    files = session.posargs or [PACKAGE_DIR]
     session.install(".[tests,lint]")
     session.run(
         "python",
@@ -164,16 +164,22 @@ def dev(session):
     session.run(
         "python",
         "-m",
-        "mypy",
+        "flake8",
         PACKAGE_DIR,
-        silent=False,
+        *tests,
     )
     session.run(
         "python",
         "-m",
-        "flake8",
+        "pylint",
         PACKAGE_DIR,
-        *tests,
+    )
+    session.run(
+        "python",
+        "-m",
+        "mypy",
+        PACKAGE_DIR,
+        silent=False,
     )
     session.run(
         "python",

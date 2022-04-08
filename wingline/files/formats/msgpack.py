@@ -1,4 +1,5 @@
 """The MessagePack adapter."""
+# pylint: disable=duplicate-code
 
 import contextlib
 from typing import Any, BinaryIO, Callable, Generator
@@ -16,13 +17,13 @@ class Msgpack(_base.Format):
 
     @contextlib.contextmanager
     def read(
-        self, fp: BinaryIO, **kwargs: Any
+        self, handle: BinaryIO, **kwargs: Any
     ) -> Generator[Callable[..., PayloadIterator], None, None]:
         """Dict iterator."""
 
         kwargs.setdefault("strict_map_key", False)
 
-        unpacker = msgpack.Unpacker(fp)
+        unpacker = msgpack.Unpacker(handle)
 
         def _read() -> PayloadIterator:
             """Innermost reader."""
@@ -34,12 +35,12 @@ class Msgpack(_base.Format):
 
     @contextlib.contextmanager
     def write(
-        self, fp: BinaryIO, **kwargs: Any
+        self, handle: BinaryIO, **kwargs: Any
     ) -> Generator[Callable[..., None], None, None]:
         """Writer."""
 
         def _write(payload: Payload) -> None:
-            msg = msgpack.packb(payload)
-            fp.write(msg)
+            msg = msgpack.packb(payload, **kwargs)
+            handle.write(msg)
 
         yield _write

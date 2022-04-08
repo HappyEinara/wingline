@@ -15,7 +15,7 @@ class JsonLines(_base.Format):
 
     @contextlib.contextmanager
     def read(
-        self, fp: BinaryIO, **default_kwargs: Any
+        self, handle: BinaryIO, **default_kwargs: Any
     ) -> Generator[Callable[..., PayloadIterator], None, None]:
         """Dict iterator."""
 
@@ -25,14 +25,14 @@ class JsonLines(_base.Format):
             # When py3.8 reaches EOL:
             # payload_kwargs = kwargs | payload_kwargs
             kwargs = {**default_kwargs, **kwargs}
-            for line in fp:
+            for line in handle:
                 yield json.loads(line, **kwargs)
 
         yield _read
 
     @contextlib.contextmanager
     def write(
-        self, fp: BinaryIO, **default_kwargs: Any
+        self, handle: BinaryIO, **default_kwargs: Any
     ) -> Generator[Callable[..., None], None, None]:
         """Writer."""
 
@@ -44,6 +44,6 @@ class JsonLines(_base.Format):
             # When py3.8 reaches EOL:
             # kwargs = default_kwargs | kwargs
             kwargs = {**default_kwargs, **kwargs}
-            fp.write((json.dumps(payload, **kwargs) + "\n").encode("utf-8"))
+            handle.write((json.dumps(payload, **kwargs) + "\n").encode("utf-8"))
 
         yield _write

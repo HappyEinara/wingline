@@ -7,7 +7,7 @@ from typing import Optional, Union
 
 from wingline import graph
 from wingline.cache import intermediate
-from wingline.files import containers, file, formats
+from wingline.files import file
 from wingline.plumbing import pipe, tap
 from wingline.plumbing.pipes import cachereader, cachewriter, processpipe
 from wingline.plumbing.sinks import iteratorsink, writersink
@@ -24,7 +24,7 @@ class Pipeline:
         *processes: PipeProcess,
         name: Optional[str] = None,
         cache_dir: Optional[pathlib.Path] = None,
-        at_node: Optional[pipe.Pipe] = None,
+        at_node: Optional[pipe.BasePipe] = None,
     ):
         if isinstance(source, Pipeline):
             if at_node is None:
@@ -32,18 +32,19 @@ class Pipeline:
             self.name: str = source.name
             self.cache_dir: Optional[pathlib.Path] = source.cache_dir
             self.graph: graph.PipelineGraph = source.graph
-            self.at: pipe.Pipe = at_node
+            self.at_node: pipe.BasePipe = at_node
         else:
             self.name = name if name is not None else f"wingline-{id(self)}"
             self.cache_dir = cache_dir
             self.graph = graph.PipelineGraph(self.name)
             source_node = self._get_source_node(source)
             self.graph.add_node(source_node)
-            self.at = source_node
+            self.at_node = source_node
             for process in processes:
-                self.at = self.process(process).at
+                self.at_node = self.process(process).at_node
 
-    def _get_source_node(self, source: Source) -> tap.Tap:
+    @staticmethod
+    def _get_source_node(source: Source) -> tap.Tap:
         """Interpret the source to create the initial node of a new pipeline."""
 
         if isinstance(source, pathlib.Path):
@@ -65,7 +66,7 @@ class Pipeline:
         if self.graph.started:
             raise RuntimeError("Can't add processes after pipeline has started.")
 
-        new_pipe: pipe.Pipe = processpipe.ProcessPipe(self.at, process)
+        new_pipe: pipe.BasePipe = processpipe.ProcessPipe(self.at_node, process)
         self.graph.add_node(new_pipe)
         if self.cache_dir and new_pipe.hash:
             cache_path = intermediate.get_cache_path(new_pipe.hash, self.cache_dir)
@@ -78,24 +79,23 @@ class Pipeline:
 
     def write(
         self,
-        output_file: pathlib.Path,
-        format: Optional[formats.Format] = None,
-        container: Optional[containers.Container] = None,
+        output_file: Union[pathlib.Path, file.File],
         name: Optional[str] = None,
     ) -> Pipeline:
         """Fluent interface to add a file writer."""
 
+        if isinstance(output_file, pathlib.Path):
+            output_file = file.File(output_file)
+
         if self.graph.started:
             raise RuntimeError("Can't add writers after pipeline has started.")
 
-        name = name if name is not None else f"writer-{self.at.name}"
+        name = name if name is not None else f"writer-{self.at_node.name}"
 
         new_pipe = writersink.WriterSink(
-            self.at,
+            self.at_node,
             output_file,
             name=name,
-            format=format,
-            container=container,
         )
         self.graph.add_node(new_pipe)
         return Pipeline(self, at_node=new_pipe)
@@ -111,8 +111,8 @@ class Pipeline:
         if self.graph.started:
             raise RuntimeError("Pipeline has already started.")
 
-        name = f"iter-{self.at.name}"
-        new_pipe = iteratorsink.IteratorSink(self.at, name=name)
+        name = f"iter-{self.at_node.name}"
+        new_pipe = iteratorsink.IteratorSink(self.at_node, name=name)
         self.graph.add_node(new_pipe)
         return iter(new_pipe)
 
