@@ -18,14 +18,21 @@ def simple_input():
     ]
 
 
-def test_cachepipe_writer(simple_input, func_add_one, tmp_path):
+@pytest.mark.parametrize("use_each", [False, True])
+def test_cachepipe_writer(
+    simple_input, func_add_one, tmp_path, func_each_add_one, use_each
+):
     """The cache pipes works."""
 
     cache_dir = tmp_path
 
     test_pipeline = wingline.Pipeline(simple_input, cache_dir=cache_dir)
-    first_process = test_pipeline.process(func_add_one)
-    second_process = first_process.process(func_add_one)
+    if use_each:
+        first_process = test_pipeline.each(func_each_add_one)
+        second_process = first_process.each(func_each_add_one)
+    else:
+        first_process = test_pipeline.process(func_add_one)
+        second_process = first_process.process(func_add_one)
 
     result = list(second_process)
     assert len(result) == len(simple_input)
@@ -51,14 +58,21 @@ def test_cachepipe_writer(simple_input, func_add_one, tmp_path):
     assert second_result == list(second_expected)
 
 
-def test_cachepipe_reader(simple_input, func_add_one, tmp_path):
+@pytest.mark.parametrize("use_each", [False, True])
+def test_cachepipe_reader(
+    simple_input, func_add_one, tmp_path, func_each_add_one, use_each
+):
     """The cache pipes wors."""
 
     cache_dir = tmp_path
 
     test_pipeline = wingline.Pipeline(simple_input, cache_dir=cache_dir)
-    first_process = test_pipeline.process(func_add_one)
-    second_process = first_process.process(func_add_one)
+    if use_each:
+        first_process = test_pipeline.each(func_each_add_one)
+        second_process = first_process.each(func_each_add_one)
+    else:
+        first_process = test_pipeline.process(func_add_one)
+        second_process = first_process.process(func_add_one)
     first_run_first_process_hash = first_process.at_node.hash
     first_run_second_process_hash = second_process.at_node.hash
     assert first_process.at_node.relationships.parent
@@ -83,8 +97,12 @@ def test_cachepipe_reader(simple_input, func_add_one, tmp_path):
     assert second_process.at_node.relationships.parent.started
 
     test_pipeline = wingline.Pipeline(simple_input, cache_dir=cache_dir)
-    first_process = test_pipeline.process(func_add_one)
-    second_process = first_process.process(func_add_one)
+    if use_each:
+        first_process = test_pipeline.each(func_each_add_one)
+        second_process = first_process.each(func_each_add_one)
+    else:
+        first_process = test_pipeline.process(func_add_one)
+        second_process = first_process.process(func_add_one)
     second_run_first_process_hash = first_process.at_node.hash
     second_run_second_process_hash = second_process.at_node.hash
     assert first_process.at_node.relationships.parent

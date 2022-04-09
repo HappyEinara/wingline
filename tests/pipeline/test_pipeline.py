@@ -64,6 +64,15 @@ def test_pipeline_add_process_after_start(input, func_add_one):
         test_pipeline.process(func_add_one)
 
 
+def test_pipeline_add_each_after_start(input, func_each_add_one):
+    """Adding a process after starting the pipeline raises."""
+
+    test_pipeline = wingline.Pipeline(input).each(func_each_add_one)
+    test_pipeline.at_node.start()
+    with pytest.raises(RuntimeError):
+        test_pipeline.each(func_each_add_one)
+
+
 def test_pipeline_add_writer_after_start(input, func_add_one):
     """Adding a writer after starting the pipeline raises."""
 
