@@ -92,8 +92,8 @@ def test_dates(cases: List[Dict[str, Any]], input_format: str) -> None:
     for case in cases:
         case.update(
             {
-                "date": case["input"].strftime(input_format),
-                "original": case["input"].strftime(input_format),
+                "date": case["input"].date().strftime(input_format),
+                "original": case["input"].date().strftime(input_format),
             }
         )
 
@@ -138,8 +138,8 @@ def test_dates_with_explicit_input_format(
     for case in cases:
         case.update(
             {
-                "date": case["input"].strftime(input_format),
-                "original": case["input"].strftime(input_format),
+                "date": case["input"].date().strftime(input_format),
+                "original": case["input"].date().strftime(input_format),
             }
         )
 
@@ -178,7 +178,7 @@ def test_datetimes_with_explicit_output_format(
     for payload in result:
         assert payload["datetime"] == payload["expected_output"]
         assert payload["expected_datetime"] == dt.datetime.strptime(
-            payload["expected_output"], output_format
+            payload["datetime"], output_format
         )
 
 
@@ -192,8 +192,8 @@ def test_dates_with_explicit_output_format(
     for case in cases:
         case.update(
             {
-                "date": case["input"].strftime(input_format),
-                "original": case["input"].strftime(input_format),
+                "date": case["input"].date().strftime(input_format),
+                "original": case["input"].date().strftime(input_format),
                 "expected_output": case["expected_date"].strftime(output_format),
             }
         )
@@ -208,7 +208,7 @@ def test_dates_with_explicit_output_format(
         assert payload["date"] == payload["expected_output"]
         assert (
             payload["expected_date"]
-            == dt.datetime.strptime(payload["expected_output"], output_format).date()
+            == dt.datetime.strptime(payload["date"], output_format).date()
         )
 
 
@@ -237,7 +237,7 @@ def test_datetimes_with_explicit_input_and_output_format(
     for payload in result:
         assert payload["datetime"] == payload["expected_output"]
         assert payload["expected_datetime"] == dt.datetime.strptime(
-            payload["expected_output"], output_format
+            payload["datetime"], output_format
         )
 
 
@@ -251,8 +251,8 @@ def test_dates_with_explicit_input_and_output_format(
     for case in cases:
         case.update(
             {
-                "date": case["input"].strftime(input_format),
-                "original": case["input"].strftime(input_format),
+                "date": case["input"].date().strftime(input_format),
+                "original": case["input"].date().strftime(input_format),
                 "expected_output": case["expected_date"].strftime(output_format),
             }
         )
@@ -267,8 +267,67 @@ def test_dates_with_explicit_input_and_output_format(
         assert payload["date"] == payload["expected_output"]
         assert (
             payload["expected_date"]
-            == dt.datetime.strptime(payload["expected_output"], output_format).date()
+            == dt.datetime.strptime(payload["date"], output_format).date()
         )
+
+
+@pytest.mark.parametrize("output_format", DATETIME_FORMATS)
+def test_datetimes_with_native_payload(
+    cases: List[Dict[str, Any]], output_format: str
+) -> None:
+    """Native datetimes are successfully reformatted."""
+
+    for case in cases:
+        case.update(
+            {
+                "datetime": case["input"],
+                "original": case["input"],
+                "expected_output": case["expected_datetime"].strftime(output_format),
+            }
+        )
+
+    test_pipeline = wingline.Pipeline(cases).process(
+        helpers.datetime(("datetime", output_format))
+    )
+    result = list(test_pipeline)
+    assert len(result) == len(cases)
+
+    for payload in result:
+        assert payload["datetime"] == payload["expected_output"]
+        assert payload["expected_datetime"] == dt.datetime.strptime(
+            payload["datetime"], output_format
+        )
+        assert payload["expected_datetime"] == payload["original"]
+
+
+@pytest.mark.parametrize("output_format", DATE_FORMATS)
+def test_dates_with_native_payload(
+    cases: List[Dict[str, Any]], output_format: str
+) -> None:
+    """Datetimes are successfully reformatted."""
+
+    for case in cases:
+        case.update(
+            {
+                "date": case["input"].date(),
+                "original": case["input"].date(),
+                "expected_output": case["expected_date"].strftime(output_format),
+            }
+        )
+
+    test_pipeline = wingline.Pipeline(cases).process(
+        helpers.date(("date", output_format))
+    )
+    result = list(test_pipeline)
+    assert len(result) == len(cases)
+
+    for payload in result:
+        assert payload["date"] == payload["expected_output"]
+        assert (
+            payload["expected_date"]
+            == dt.datetime.strptime(payload["date"], output_format).date()
+        )
+        assert payload["expected_date"] == payload["original"]
 
 
 @pytest.mark.parametrize(

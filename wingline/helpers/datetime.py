@@ -54,13 +54,24 @@ def datetime(*fields: FieldSpec, date_only: bool = False) -> PipeProcess:
             for field, formats in fields_spec.items():
                 output_format, input_format = formats
                 if field in payload:
+                    parsed_datetime: dt.datetime
                     parsed: Union[dt.datetime, dt.date]
-                    if input_format is None:
-                        parsed = parser.parse(payload[field])
+                    if isinstance(payload[field], dt.datetime):
+                        parsed_datetime = payload[field]
+                    elif isinstance(payload[field], dt.date):
+                        parsed_datetime = dt.datetime.combine(
+                            payload[field], dt.time.min
+                        )
+                    elif input_format is not None:
+                        parsed_datetime = dt.datetime.strptime(
+                            payload[field], input_format
+                        )
                     else:
-                        parsed = dt.datetime.strptime(payload[field], input_format)
+                        parsed_datetime = parser.parse(payload[field])
                     if date_only:
-                        parsed = parsed.date()
+                        parsed = parsed_datetime.date()
+                    else:
+                        parsed = parsed_datetime
                     if output_format is None:
                         payload[field] = parsed
                     else:
