@@ -57,19 +57,27 @@ def cases(datetime_cases: List[dt.datetime]) -> List[Dict[str, Any]]:
     ]
 
 
-@pytest.mark.parametrize("datetime_format", DATETIME_FORMATS)
-def test_datetimes(cases: List[Dict[str, Any]], datetime_format: str) -> None:
+@pytest.mark.parametrize("input_format", DATETIME_FORMATS)
+@pytest.mark.parametrize("use_one_tuple", [True, False])
+def test_datetimes(
+    cases: List[Dict[str, Any]], input_format: str, use_one_tuple: bool
+) -> None:
     """Datetimes are successfully parsed."""
 
     for case in cases:
         case.update(
             {
-                "datetime": case["input"].strftime(datetime_format),
-                "original": case["input"].strftime(datetime_format),
+                "datetime": case["input"].strftime(input_format),
+                "original": case["input"].strftime(input_format),
             }
         )
 
-    test_pipeline = wingline.Pipeline(cases).process(helpers.datetime("datetime"))
+    if use_one_tuple:
+        test_pipeline = wingline.Pipeline(cases).process(
+            helpers.datetime(("datetime",))
+        )
+    else:
+        test_pipeline = wingline.Pipeline(cases).process(helpers.datetime("datetime"))
     result = list(test_pipeline)
     assert len(result) == len(cases)
 
@@ -77,15 +85,15 @@ def test_datetimes(cases: List[Dict[str, Any]], datetime_format: str) -> None:
         assert payload["datetime"] == payload["expected_datetime"]
 
 
-@pytest.mark.parametrize("date_format", DATE_FORMATS)
-def test_dates(cases: List[Dict[str, Any]], date_format: str) -> None:
+@pytest.mark.parametrize("input_format", DATE_FORMATS)
+def test_dates(cases: List[Dict[str, Any]], input_format: str) -> None:
     """Datetimes are successfully parsed."""
 
     for case in cases:
         case.update(
             {
-                "date": case["input"].strftime(date_format),
-                "original": case["input"].strftime(date_format),
+                "date": case["input"].strftime(input_format),
+                "original": case["input"].strftime(input_format),
             }
         )
 
@@ -97,22 +105,22 @@ def test_dates(cases: List[Dict[str, Any]], date_format: str) -> None:
         assert payload["date"] == payload["expected_date"]
 
 
-@pytest.mark.parametrize("datetime_format", DATETIME_FORMATS)
-def test_datetimes_with_explicit_format(
-    cases: List[Dict[str, Any]], datetime_format: str
+@pytest.mark.parametrize("input_format", DATETIME_FORMATS)
+def test_datetimes_with_explicit_input_format(
+    cases: List[Dict[str, Any]], input_format: str
 ) -> None:
     """Datetimes are successfully parsed."""
 
     for case in cases:
         case.update(
             {
-                "datetime": case["input"].strftime(datetime_format),
-                "original": case["input"].strftime(datetime_format),
+                "datetime": case["input"].strftime(input_format),
+                "original": case["input"].strftime(input_format),
             }
         )
 
     test_pipeline = wingline.Pipeline(cases).process(
-        helpers.datetime(("datetime", datetime_format))
+        helpers.datetime(("datetime", None, input_format))
     )
     result = list(test_pipeline)
     assert len(result) == len(cases)
@@ -121,22 +129,22 @@ def test_datetimes_with_explicit_format(
         assert payload["datetime"] == payload["expected_datetime"]
 
 
-@pytest.mark.parametrize("date_format", DATE_FORMATS)
-def test_dates_with_explicit_format(
-    cases: List[Dict[str, Any]], date_format: str
+@pytest.mark.parametrize("input_format", DATE_FORMATS)
+def test_dates_with_explicit_input_format(
+    cases: List[Dict[str, Any]], input_format: str
 ) -> None:
     """Datetimes are successfully parsed."""
 
     for case in cases:
         case.update(
             {
-                "date": case["input"].strftime(date_format),
-                "original": case["input"].strftime(date_format),
+                "date": case["input"].strftime(input_format),
+                "original": case["input"].strftime(input_format),
             }
         )
 
     test_pipeline = wingline.Pipeline(cases).process(
-        helpers.date(("date", date_format))
+        helpers.date(("date", None, input_format))
     )
     result = list(test_pipeline)
     assert len(result) == len(cases)
@@ -145,16 +153,145 @@ def test_dates_with_explicit_format(
         assert payload["date"] == payload["expected_date"]
 
 
+@pytest.mark.parametrize("input_format", DATETIME_FORMATS)
+@pytest.mark.parametrize("output_format", DATETIME_FORMATS)
+def test_datetimes_with_explicit_output_format(
+    cases: List[Dict[str, Any]], input_format: str, output_format: str
+) -> None:
+    """Datetimes are successfully reformatted."""
+
+    for case in cases:
+        case.update(
+            {
+                "datetime": case["input"].strftime(input_format),
+                "original": case["input"].strftime(input_format),
+                "expected_output": case["expected_datetime"].strftime(output_format),
+            }
+        )
+
+    test_pipeline = wingline.Pipeline(cases).process(
+        helpers.datetime(("datetime", output_format))
+    )
+    result = list(test_pipeline)
+    assert len(result) == len(cases)
+
+    for payload in result:
+        assert payload["datetime"] == payload["expected_output"]
+        assert payload["expected_datetime"] == dt.datetime.strptime(
+            payload["expected_output"], output_format
+        )
+
+
+@pytest.mark.parametrize("input_format", DATE_FORMATS)
+@pytest.mark.parametrize("output_format", DATE_FORMATS)
+def test_dates_with_explicit_output_format(
+    cases: List[Dict[str, Any]], input_format: str, output_format: str
+) -> None:
+    """Datetimes are successfully reformatted."""
+
+    for case in cases:
+        case.update(
+            {
+                "date": case["input"].strftime(input_format),
+                "original": case["input"].strftime(input_format),
+                "expected_output": case["expected_date"].strftime(output_format),
+            }
+        )
+
+    test_pipeline = wingline.Pipeline(cases).process(
+        helpers.date(("date", output_format))
+    )
+    result = list(test_pipeline)
+    assert len(result) == len(cases)
+
+    for payload in result:
+        assert payload["date"] == payload["expected_output"]
+        assert (
+            payload["expected_date"]
+            == dt.datetime.strptime(payload["expected_output"], output_format).date()
+        )
+
+
+@pytest.mark.parametrize("input_format", DATETIME_FORMATS)
+@pytest.mark.parametrize("output_format", DATETIME_FORMATS)
+def test_datetimes_with_explicit_input_and_output_format(
+    cases: List[Dict[str, Any]], input_format: str, output_format: str
+) -> None:
+    """Datetimes are successfully reformatted."""
+
+    for case in cases:
+        case.update(
+            {
+                "datetime": case["input"].strftime(input_format),
+                "original": case["input"].strftime(input_format),
+                "expected_output": case["expected_datetime"].strftime(output_format),
+            }
+        )
+
+    test_pipeline = wingline.Pipeline(cases).process(
+        helpers.datetime(("datetime", output_format, input_format))
+    )
+    result = list(test_pipeline)
+    assert len(result) == len(cases)
+
+    for payload in result:
+        assert payload["datetime"] == payload["expected_output"]
+        assert payload["expected_datetime"] == dt.datetime.strptime(
+            payload["expected_output"], output_format
+        )
+
+
+@pytest.mark.parametrize("input_format", DATE_FORMATS)
+@pytest.mark.parametrize("output_format", DATE_FORMATS)
+def test_dates_with_explicit_input_and_output_format(
+    cases: List[Dict[str, Any]], input_format: str, output_format: str
+) -> None:
+    """Datetimes are successfully reformatted."""
+
+    for case in cases:
+        case.update(
+            {
+                "date": case["input"].strftime(input_format),
+                "original": case["input"].strftime(input_format),
+                "expected_output": case["expected_date"].strftime(output_format),
+            }
+        )
+
+    test_pipeline = wingline.Pipeline(cases).process(
+        helpers.date(("date", output_format, input_format))
+    )
+    result = list(test_pipeline)
+    assert len(result) == len(cases)
+
+    for payload in result:
+        assert payload["date"] == payload["expected_output"]
+        assert (
+            payload["expected_date"]
+            == dt.datetime.strptime(payload["expected_output"], output_format).date()
+        )
+
+
 @pytest.mark.parametrize(
     "bad_spec",
     [
         None,
-        ("onestring",),
         {"dict": "dict"},
         (
-            "three",
-            "strings",
+            "four",
+            "elements",
+            None,
             "wtf",
+        ),
+        ("stringnone", None),
+        (
+            "stringnonenone",
+            None,
+            None,
+        ),
+        (
+            "stringstringnone",
+            "stringstringnone",
+            None,
         ),
     ],
 )

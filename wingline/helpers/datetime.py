@@ -1,50 +1,76 @@
 """Date and time helpers"""
 
 import datetime as dt
-from typing import Optional, Union
+from typing import Optional, Tuple, Union, cast
 
 from dateutil import parser
 
 from wingline.types import PayloadIterable, PayloadIterator, PipeProcess
 
+FieldSpec = Union[
+    str,
+    Tuple[str],
+    Tuple[str, str],
+    Tuple[str, Optional[str], str],
+]
 
-def datetime(
-    *fields: Union[str, tuple[str, str]], date_only: bool = False
-) -> PipeProcess:
+
+def parse_field_spec(field: FieldSpec) -> Tuple[str, Optional[str], Optional[str]]:
+    """Validate and parse a field spec for date/datetime conversion."""
+
+    if isinstance(field, str):
+        return field, None, None
+    if isinstance(field, tuple):
+        if len(field) == 1:
+            if isinstance(field[0], str):
+                return field[0], None, None
+        if len(field) == 2:
+            field = cast(Tuple[str, str], field)
+            if isinstance(field[0], str) and isinstance(field[1], str):
+                return field[0], field[1], None
+        if len(field) == 3:
+            field = cast(Tuple[str, Optional[str], str], field)
+            if (
+                isinstance(field[0], str)
+                and (isinstance(field[1], str) or field[1] is None)
+                and isinstance(field[2], str)
+            ):
+                return field[0], field[1], field[2]
+    raise ValueError("Invalid field spec.")
+
+
+def datetime(*fields: FieldSpec, date_only: bool = False) -> PipeProcess:
     """Parse given fields into datetimes."""
 
-    fields_spec: dict[str, Optional[str]] = {}
+    fields_spec: dict[str, Tuple[Optional[str], Optional[str]]] = {}
     for field in fields:
-        if isinstance(field, str):
-            fields_spec[field] = None
-        elif isinstance(field, tuple) and len(field) == 2:
-            fields_spec[field[0]] = field[1]
-        else:
-            raise ValueError(
-                "The datetime and date helpers expect fieldname arguments to be "
-                "either a string or a (name, strptime-format) tuple."
-            )
+        fieldname, output_format, input_format = parse_field_spec(field)
+        fields_spec[fieldname] = output_format, input_format
 
-    def _date(payloads: PayloadIterable) -> PayloadIterator:
+    def _datetime(payloads: PayloadIterable) -> PayloadIterator:
         """Convert specified fields to datetimes."""
 
         for payload in payloads:
-            for field, datetime_format in fields_spec.items():
+            for field, formats in fields_spec.items():
+                output_format, input_format = formats
                 if field in payload:
                     parsed: Union[dt.datetime, dt.date]
-                    if datetime_format is None:
+                    if input_format is None:
                         parsed = parser.parse(payload[field])
                     else:
-                        parsed = dt.datetime.strptime(payload[field], datetime_format)
+                        parsed = dt.datetime.strptime(payload[field], input_format)
                     if date_only:
                         parsed = parsed.date()
-                    payload[field] = parsed
+                    if output_format is None:
+                        payload[field] = parsed
+                    else:
+                        payload[field] = parsed.strftime(output_format)
             yield payload
 
-    return _date
+    return _datetime
 
 
-def date(*fields: Union[str, tuple[str, str]]) -> PipeProcess:
+def date(*fields: FieldSpec) -> PipeProcess:
     """Parse given fields into dates."""
 
     return datetime(*fields, date_only=True)
