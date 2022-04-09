@@ -26,7 +26,7 @@ class Csv(_base.Format):
         kwargs = {
             **{
                 "fieldnames": None,
-                "restkey": "(rest)",
+                "restkey": "_rest",
                 "restval": None,
                 "dialect": "excel",
             },

@@ -9,10 +9,10 @@ from wingline import graph
 from wingline.cache import intermediate
 from wingline.files import file
 from wingline.plumbing import pipe, tap
-from wingline.plumbing.pipes import cachereader, cachewriter, processpipe
+from wingline.plumbing.pipes import cachereader, cachewriter, eachpipe, processpipe
 from wingline.plumbing.sinks import iteratorsink, writersink
 from wingline.plumbing.taps import filetap
-from wingline.types import PayloadIterable, PayloadIterator, PipeProcess
+from wingline.types import EachProcess, PayloadIterable, PayloadIterator, PipeProcess
 
 
 class Pipeline:
@@ -67,6 +67,23 @@ class Pipeline:
             raise RuntimeError("Can't add processes after pipeline has started.")
 
         new_pipe: pipe.BasePipe = processpipe.ProcessPipe(self.at_node, process)
+        self.graph.add_node(new_pipe)
+        if self.cache_dir and new_pipe.hash:
+            cache_path = intermediate.get_cache_path(new_pipe.hash, self.cache_dir)
+            if cache_path.exists():
+                new_pipe = cachereader.CacheReader(new_pipe, cache_path)
+            else:
+                new_pipe = cachewriter.CacheWriter(new_pipe, cache_path)
+            self.graph.add_node(new_pipe)
+        return Pipeline(self, at_node=new_pipe)
+
+    def each(self, process: EachProcess) -> Pipeline:
+        """Fluent interface to add an each-process."""
+
+        if self.graph.started:
+            raise RuntimeError("Can't add processes after pipeline has started.")
+
+        new_pipe: pipe.BasePipe = eachpipe.EachPipe(self.at_node, process)
         self.graph.add_node(new_pipe)
         if self.cache_dir and new_pipe.hash:
             cache_path = intermediate.get_cache_path(new_pipe.hash, self.cache_dir)

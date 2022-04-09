@@ -1,13 +1,13 @@
 """Test fixtures."""
 
 import pathlib
-from typing import Any, Iterable, Tuple
+from typing import Any, Iterable, Optional, Tuple
 
 from pytest_cases import fixture, parametrize
 
 from wingline.files.containers import Gzip, Zip
 from wingline.files.formats import Csv, JsonLines
-from wingline.types import PayloadIterable
+from wingline.types import EachProcess, Payload, PayloadIterable
 
 TEST_FILES = [
     (
@@ -92,7 +92,15 @@ def simple_data():
 def add_one_input():
     return [
         {"a": 1, "b": 1, "c": 1},
-        {"d": 1, "e": 1, "f": 1},
+        {"a": 2, "b": 2, "c": 2},
+    ]
+
+
+@fixture
+def add_one_output_twice():
+    return [
+        {"a": 3, "b": 3, "c": 3},
+        {"a": 4, "b": 4, "c": 4},
     ]
 
 
@@ -105,3 +113,15 @@ def func_add_one():
             yield {k: v + 1 for (k, v) in payload.items()}
 
     return add_one
+
+
+@fixture
+def func_each_add_one() -> EachProcess:
+    """The add-one function as an each-process."""
+
+    def each_add_one(payload: Payload) -> Optional[Payload]:
+        """Add one to the value of each key."""
+
+        return {k: v + 1 for (k, v) in payload.items()}
+
+    return each_add_one
