@@ -66,7 +66,7 @@ class File:
         """Return a writer manager for the file."""
 
         if self.exists:
-            raise RuntimeError("Can't write to a file that exists.")
+            raise RuntimeError(f"{self.path} exists. Won't overwrite it.")
         return writer.Writer(self.path, self.filetype)
 
     @property
