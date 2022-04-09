@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import abc
 import contextlib
-from typing import Any, BinaryIO, Callable, Dict, Generator, List, Optional
+from typing import Any, BinaryIO, Callable, Generator, List
 
 from wingline.types import PayloadIterator, ReadPointer, WritePointer
 
@@ -15,10 +15,7 @@ class Format(abc.ABC):
 
     suffixes: List[str]
 
-    def __init__(
-        self,
-        **kwargs,
-    ):
+    def __init__(self, **kwargs: Any):
         self._kwargs = kwargs
 
     @contextlib.contextmanager

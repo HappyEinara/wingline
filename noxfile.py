@@ -10,11 +10,11 @@ TESTS_DIR = "tests"
 nox.options.envdir = os.environ.get("NOX_CACHE")
 nox.options.sessions = [
     "test",
+    "coverage",
     "lint_flake8",
     "lint_precommit",
     "lint_pylint",
     "lint_mypy",
-    "coverage",
 ]
 
 
@@ -141,6 +141,7 @@ def dev(session):
         "poetry", "install", "-Edev", "-Etests", "-Elint", "-Esecurity", external=True
     )
     tests = session.posargs or [TESTS_DIR]
+    session.run("python", "-m", "coverage", "erase")
     session.run(
         "python",
         "-m",
@@ -153,11 +154,22 @@ def dev(session):
         "--exitfirst",
         "-n",
         "auto",
-        "--cov",
-        PACKAGE_DIR,
+        "--log-cli-level=DEBUG",
+        f"--cov={PACKAGE_DIR}",
         "--cov-append",
         "--cov-report=",
         *tests,
+    )
+    session.run(
+        "python",
+        "-m",
+        "coverage",
+        "report",
+        "--show-missing",
+        "--skip-covered",
+        "--sort=miss",
+        "--fail-under",
+        "100",
     )
     session.run("python", "-m", "bandit", "-r", PACKAGE_DIR)
     session.run("python", "-m", "safety", "check")
@@ -180,15 +192,4 @@ def dev(session):
         "mypy",
         PACKAGE_DIR,
         silent=False,
-    )
-    session.run(
-        "python",
-        "-m",
-        "coverage",
-        "report",
-        "--show-missing",
-        "--skip-covered",
-        "--sort=miss",
-        "--fail-under",
-        "100",
     )
