@@ -2,10 +2,10 @@
 
 import pprint
 
-from wingline.types import PayloadIterable
+from wingline.types import PayloadIterable, PayloadIterator
 
 
-def pretty(payloads: PayloadIterable) -> PayloadIterable:
+def pretty(payloads: PayloadIterable) -> PayloadIterator:
     """Pretty print the payload"""
 
     for payload in payloads:

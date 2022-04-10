@@ -2,12 +2,16 @@
 # pylint: disable=duplicate-code
 
 
+import logging
 import pathlib
+import tempfile
 from types import TracebackType
 from typing import BinaryIO, Optional, Type
 
 from wingline.files import filetype as ft
 from wingline.types import ContainerWriteManager, FormatWriteManager, WritePointer
+
+logger = logging.getLogger(__name__)
 
 
 class Writer:
@@ -19,11 +23,14 @@ class Writer:
         self._container_manager: ContainerWriteManager
         self._container_handle: BinaryIO
         self._format_manager: FormatWriteManager
+        self._temp_dir: tempfile.TemporaryDirectory[str]
+        self._temp_file: pathlib.Path
 
     def __enter__(self) -> WritePointer:
         """Context manager entrypoint."""
-
-        self._container_manager = self.filetype.container.write_manager(self.path)
+        self._temp_dir = tempfile.TemporaryDirectory()
+        self._temp_file = pathlib.Path(self._temp_dir.__enter__()) / self.path.name
+        self._container_manager = self.filetype.container.write_manager(self._temp_file)
         self._container_handle = self._container_manager.__enter__()
         self._format_manager = self.filetype.format.write_manager(
             self._container_handle
@@ -35,7 +42,19 @@ class Writer:
         exception_type: Optional[Type[BaseException]],
         exception: Optional[BaseException],
         traceback: Optional[TracebackType],
+        success: bool = False,
     ) -> None:
         """Context manager exitpoint."""
         self._format_manager.__exit__(exception_type, exception, traceback)
         self._container_manager.__exit__(exception_type, exception, traceback)
+        if success:
+            logger.debug(
+                "%s: Pipeline was successful so far, so writing to %s", self, self.path
+            )
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self._temp_file.rename(self.path)
+        else:
+            logger.debug(
+                "%s: Pipeline failed, so not persisting output to %s", self, self.path
+            )
+        self._temp_dir.__exit__(exception_type, exception, traceback)

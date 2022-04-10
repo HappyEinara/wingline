@@ -45,8 +45,8 @@ class CacheWriter(pipe.Pipe):
             raise RuntimeError("File has no writer.")
         self._write = self._writer.__enter__()
 
-    def teardown(self) -> None:
+    def teardown(self, success: bool = False) -> None:
         """Close the writer."""
         if not self._writer:  # pragma: no cover
             raise RuntimeError("Can't close writer: was it opened?")
-        self._writer.__exit__(None, None, None)
+        self._writer.__exit__(None, None, None, success=success)

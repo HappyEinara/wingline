@@ -1,11 +1,14 @@
 """The JSONline adapter."""
 
 import contextlib
+import logging
 from typing import Any, BinaryIO, Callable, Generator
 
 from wingline.files.formats import _base
 from wingline.json import json
 from wingline.types import Payload, PayloadIterator
+
+logger = logging.getLogger(__name__)
 
 
 class JsonLines(_base.Format):
@@ -36,14 +39,18 @@ class JsonLines(_base.Format):
     ) -> Generator[Callable[..., None], None, None]:
         """Writer."""
 
-        default_kwargs.setdefault("sort_keys", True)
-
         def _write(payload: Payload, **kwargs: Any) -> None:
             """Innermost writer."""
 
             # When py3.8 reaches EOL:
             # kwargs = default_kwargs | kwargs
             kwargs = {**default_kwargs, **kwargs}
-            handle.write((json.dumps(payload, **kwargs) + "\n").encode("utf-8"))
+            try:
+                output = json.dumps(payload, **kwargs)
+            except TypeError as exc:
+                logger.error("Bad payload: %s", str(payload))
+                logger.exception(exc)
+                raise TypeError(f"Couldn't encode payload with {json}") from exc
+            handle.write((output + "\n").encode("utf-8"))
 
         yield _write

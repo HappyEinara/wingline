@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import collections.abc
+import logging
 import pathlib
 from typing import Optional
 
 from wingline import hasher
 from wingline.plumbing import pipe
 from wingline.types import SENTINEL, PayloadIterable
+
+logger = logging.getLogger(__name__)
 
 
 class Tap(pipe.BasePipe):
@@ -34,6 +37,7 @@ class Tap(pipe.BasePipe):
             if isinstance(source, collections.abc.Sequence)
             else None
         )
+        self.is_real_tap = True
 
     def start(self) -> None:
         """Start the process."""
@@ -42,7 +46,11 @@ class Tap(pipe.BasePipe):
             raise RuntimeError("Attempted to start a pipe for the second time.")
         self._started = True
         self.thread.start()
+        logger.debug("(Tap) %s: started thread.", self)
         for payload in self.source:
+            if self.abort_event.is_set():
+                logger.debug("(Tap) %s: received abort event.", self)
+                break
             self.queues.input.put(payload)
         self.queues.input.put(SENTINEL)
 

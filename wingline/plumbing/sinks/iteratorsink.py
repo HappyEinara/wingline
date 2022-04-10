@@ -21,6 +21,9 @@ class IteratorSink(sink.Sink):
         """Iterate over the pipe output."""
         self.start()
         while True:
+            if self.abort_event.is_set():
+                logger.debug("%s: Received abort event.", self)
+                break
             payload = self._iter_queue.get()
             if payload is not SENTINEL:
                 yield payload

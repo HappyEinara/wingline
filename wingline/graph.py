@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Set
 
+from wingline import ui
 from wingline.plumbing import pipe, sink, tap
+from wingline.plumbing.pipes import cachereader
 
 GraphDict = Dict[pipe.BasePipe, List[pipe.BasePipe]]
+
+logger = logging.getLogger(__name__)
 
 
 class PipelineGraph:
@@ -34,6 +39,23 @@ class PipelineGraph:
             #     _add_children(graph, child)
 
         _add_children(self._graph, node)
+        self.refresh_active_nodes()
+
+    def refresh_active_nodes(self) -> None:
+        """Activate/deactivate nodes based on caching and sinks."""
+
+        def _activate_ancestors(this_pipe: pipe.BasePipe, active: bool) -> None:
+            """Set ancestors to active unless a cache reader has appeared."""
+
+            this_pipe.is_active = active
+            if this_pipe.relationships.parent:
+                if isinstance(this_pipe, cachereader.CacheReader):
+                    _activate_ancestors(this_pipe.relationships.parent, False)
+                else:
+                    _activate_ancestors(this_pipe.relationships.parent, active)
+
+        for next_sink in self.sinks:
+            _activate_ancestors(next_sink, True)
 
     @property
     def started(self) -> bool:
@@ -48,8 +70,11 @@ class PipelineGraph:
             raise RuntimeError("Pipeline has already started!")
 
         for next_sink in self.sinks:
+            logger.debug("%s: starting sink %s", self, next_sink)
             next_sink.start()
+        logger.debug("%s: all sinks started", self)
         for next_sink in self.sinks:
+            logger.debug("%s: waiting to join %s", self, next_sink)
             next_sink.join()
 
     @property
@@ -63,7 +88,9 @@ class PipelineGraph:
         """Return all the taps in the graph."""
 
         taps: Set[pipe.BasePipe] = {
-            node for node in self.nodes if isinstance(node, tap.Tap)
+            node
+            for node in self.nodes
+            if isinstance(node, tap.Tap) and node.is_real_tap
         }
         return taps
 
@@ -90,3 +117,7 @@ class PipelineGraph:
             add_node(graph_dict, next_tap)
 
         return graph_dict
+
+    def print(self):
+        """Print the graph."""
+        ui.print(ui.graph_tree(self))

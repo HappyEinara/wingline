@@ -25,3 +25,4 @@ class CacheReader(filetap.FileTap):
         cache_file = file.File(cache_path, intermediate.filetype)
         super().__init__(cache_file, name, parent=parent)
         self.hash = parent.hash
+        self.is_real_tap = False

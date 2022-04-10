@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Optional, Union
+from typing import Optional, Type, Union
 
-from wingline import graph
+from wingline import graph, helpers, ui
 from wingline.cache import intermediate
 from wingline.files import file
 from wingline.plumbing import pipe, tap
 from wingline.plumbing.pipes import cachereader, cachewriter, eachpipe, processpipe
-from wingline.plumbing.sinks import iteratorsink, writersink
+from wingline.plumbing.sinks import iteratorsink, processsink, writersink
 from wingline.plumbing.taps import filetap
 from wingline.types import EachProcess, PayloadIterable, PayloadIterator, PipeProcess
 
@@ -23,7 +23,7 @@ class Pipeline:
         source: Source,
         *processes: PipeProcess,
         name: Optional[str] = None,
-        cache_dir: Optional[pathlib.Path] = None,
+        cache_dir: Optional[Union[pathlib.Path, str]] = None,
         at_node: Optional[pipe.BasePipe] = None,
     ):
         if isinstance(source, Pipeline):
@@ -35,7 +35,7 @@ class Pipeline:
             self.at_node: pipe.BasePipe = at_node
         else:
             self.name = name if name is not None else f"wingline-{id(self)}"
-            self.cache_dir = cache_dir
+            self.cache_dir = pathlib.Path(cache_dir) if cache_dir is not None else None
             self.graph = graph.PipelineGraph(self.name)
             source_node = self._get_source_node(source)
             self.graph.add_node(source_node)
@@ -60,15 +60,21 @@ class Pipeline:
         source_node = filetap.FileTap(source_file, name=name)
         return source_node
 
-    def process(self, process: PipeProcess) -> Pipeline:
+    def process(self, process: PipeProcess, sink: bool = False) -> Pipeline:
         """Fluent interface to add a process."""
 
         if self.graph.started:
             raise RuntimeError("Can't add processes after pipeline has started.")
 
-        new_pipe: pipe.BasePipe = processpipe.ProcessPipe(self.at_node, process)
+        klass: Type[processpipe.ProcessPipe]
+        if sink:
+            klass = processsink.ProcessSink
+        else:
+            klass = processpipe.ProcessPipe
+
+        new_pipe: pipe.BasePipe = klass(self.at_node, process)
         self.graph.add_node(new_pipe)
-        if self.cache_dir and new_pipe.hash:
+        if not sink and self.cache_dir and new_pipe.hash:
             cache_path = intermediate.get_cache_path(new_pipe.hash, self.cache_dir)
             if cache_path.exists():
                 new_pipe = cachereader.CacheReader(new_pipe, cache_path)
@@ -76,6 +82,11 @@ class Pipeline:
                 new_pipe = cachewriter.CacheWriter(new_pipe, cache_path)
             self.graph.add_node(new_pipe)
         return Pipeline(self, at_node=new_pipe)
+
+    def sink(self, process: PipeProcess) -> Pipeline:
+        """Fluent interface to add a process marked as a Sink."""
+
+        return self.process(process, sink=True)
 
     def each(self, process: EachProcess) -> Pipeline:
         """Fluent interface to add an each-process."""
@@ -96,11 +107,13 @@ class Pipeline:
 
     def write(
         self,
-        output_file: Union[pathlib.Path, file.File],
+        output_file: Union[str, pathlib.Path, file.File],
         name: Optional[str] = None,
     ) -> Pipeline:
         """Fluent interface to add a file writer."""
 
+        if isinstance(output_file, str):
+            output_file = pathlib.Path(output_file)
         if isinstance(output_file, pathlib.Path):
             output_file = file.File(output_file)
 
@@ -116,6 +129,16 @@ class Pipeline:
         )
         self.graph.add_node(new_pipe)
         return Pipeline(self, at_node=new_pipe)
+
+    def pretty(self) -> Pipeline:
+        """Pretty-print pipeline output."""
+
+        return self.sink(helpers.pretty)
+
+    def show_graph(self) -> None:
+        """Output a visualisation of the graph."""
+
+        self.graph.print()
 
     def run(self) -> None:
         """Run the graph."""

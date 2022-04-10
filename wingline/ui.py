@@ -11,6 +11,7 @@ from wingline import graph
 from wingline.plumbing import pipe
 
 try:
+    import rich.console
     import rich.text
     import rich.tree
 except ImportError:  # pragma: no cover
@@ -36,7 +37,10 @@ def warn_if_unavailable(func: Callable[..., Any]) -> Callable[..., Any]:
 @warn_if_unavailable
 def render_pipe(top_pipe: pipe.BasePipe) -> rich.text.Text:
     """Pretty print a view of the graph descending from a pipe."""
-    return rich.text.Text(str(top_pipe))
+
+    if top_pipe.is_active:
+        return rich.text.Text(f"{top_pipe}")
+    return rich.text.Text(f"{top_pipe}", style="bright_black")
 
 
 @warn_if_unavailable
@@ -53,3 +57,11 @@ def graph_tree(input_graph: graph.PipelineGraph) -> rich.tree.Tree:
     add_graph(tree, input_graph.dict)
 
     return tree
+
+
+@warn_if_unavailable
+def print(content: Any) -> None:  # pylint: disable=redefined-builtin
+    """Print a Rich renderable"""
+
+    console = rich.console.Console()
+    console.print(content)

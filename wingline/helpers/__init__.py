@@ -1,16 +1,17 @@
 """Helper operations."""
 
+from wingline.helpers import keys
 from wingline.helpers.datetime import date, datetime
-from wingline.helpers.keys import filter_keys, remove_keys
+from wingline.helpers.dynamodb import dynamodb_deserialize
 from wingline.helpers.printers import pretty
 from wingline.helpers.ranges import head, tail
 
 __all__ = [
     "date",
     "datetime",
-    "filter_keys",
+    "dynamodb_deserialize",
     "head",
+    "keys",
     "pretty",
-    "remove_keys",
     "tail",
 ]
