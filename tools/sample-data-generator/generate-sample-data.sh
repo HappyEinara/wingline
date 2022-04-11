@@ -12,5 +12,5 @@ fi
 echo "Using output dir $WL_SAMPLE_DATA_OUTPUT_DIR"
 export WL_SAMPLE_DATA_OUTPUT_DIR
 cd $(dirname $0)
-docker-compose build && docker-compose run --rm -T generator
+docker-compose build && docker-compose up && docker-compose run --rm -T generator
 docker-compose down

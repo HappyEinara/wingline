@@ -9,15 +9,17 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     import importlib_metadata  # type: ignore
 
+from wingline.files.file import File
 from wingline.json import json
-from wingline.plumbing import Pipeline
+from wingline.pipeline import Pipeline
 from wingline.settings import settings
 
 __version__ = importlib_metadata.version(__name__)
 
 __all__ = [
+    "Pipeline",
+    "File",
     "__version__",
     "json",
     "settings",
-    "Pipeline",
 ]

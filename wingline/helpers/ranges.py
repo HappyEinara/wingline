@@ -2,35 +2,36 @@
 
 import collections
 
-from wingline.types import PayloadIterable
+from wingline.types import AllProcess, Payload, PayloadIterator
 
 
-class Head:
-    def __init__(self, count=10):
-        self.count = count
-        self.seen = 0
+def head(count: int = 10) -> AllProcess:
+    """Return the first `count` values seen."""
 
-    def __call__(self, parent: PayloadIterable) -> PayloadIterable:
-        for payload in parent:
-            if self.seen < self.count:
+    state = {"count": count, "seen": 0}
+
+    def _head(payloads: PayloadIterator) -> PayloadIterator:
+        """Process the payloads."""
+        for payload in payloads:
+            if state["seen"] < state["count"]:
                 yield payload
-                self.seen += 1
+                state["seen"] += 1
             else:
                 return
 
+    return _head
 
-head = Head
 
+def tail(count: int = 10) -> AllProcess:
+    """Return the last `count` values seen."""
 
-class Tail:
-    def __init__(self, count: int = 10):
-        self.deque = collections.deque(maxlen=count)
+    deque: collections.deque[Payload] = collections.deque(maxlen=count)
 
-    def __call__(self, parent: PayloadIterable) -> PayloadIterable:
-        for payload in parent:
-            self.deque.append(payload)
-        for payload in self.deque:
+    def _tail(payloads: PayloadIterator) -> PayloadIterator:
+        """Process the payloads."""
+        for payload in payloads:
+            deque.append(payload)
+        for payload in deque:
             yield payload
 
-
-tail = Tail
+    return _tail

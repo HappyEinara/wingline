@@ -1,46 +1,42 @@
-"""Detect filetype."""
+"""Filetype encapsulation."""
 
+# pylint: disable=redefined-builtin
+
+import dataclasses
 import pathlib
-from typing import BinaryIO
+from typing import Optional, Type
 
-import filetype
+from wingline.files import containers, formats
 
-from wingline.files import containers, formats, reader
-
-# https://github.com/h2non/filetype.py/blame/master/README.rst#L19
-HEADER_SIZE = 261
+DefaultContainer = containers.Bare
 
 
-def detect_container(path: pathlib.Path) -> type[containers.Container]:
-    """Detect the container of a file"""
+@dataclasses.dataclass
+class Filetype:
+    """Container for file format/container spec."""
 
-    container_type = filetype.archive_match(path)
-    container_mime_type = container_type.mime if container_type else None
-    return containers.get_container_by_mime_type(container_mime_type)
-
-
-def get_container(path: pathlib.Path) -> containers.Container:
-    """Detect the container of a file"""
-
-    return detect_container(path)(path)
+    def __init__(
+        self, format: formats.Format, container: Optional[containers.Container] = None
+    ):
+        self.format = format
+        self.container = container if container is not None else DefaultContainer()
 
 
-def detect_format(container: containers.Container) -> type[formats.Format]:
-    """Detect the format of an open file object."""
+def detect_filetype(
+    path: pathlib.Path,
+) -> Filetype:
+    """Detect filetypes based on path."""
 
-    with container.handle() as handle:
-        format_type = filetype.guess(handle)
-    if format_type:
-        format_mime_type = format_type.mime if format_type else None
-    else:
-        format_mime_type = formats.get_mime_type_by_path(container.path)
-    format = formats.get_format_by_mime_type(format_mime_type)
-    if not format:
-        raise ValueError("Couldn't determine format.")
-    return format
-
-
-def get_reader(path: pathlib.Path) -> reader.Reader:
-    """Get a reader for the file."""
-
-    return reader.Reader(path)
+    container: Type[containers.Container] = DefaultContainer
+    suffixes = path.suffixes
+    suffix: Optional[str]
+    suffix = suffixes.pop()
+    for next_container in containers.CONTAINERS:
+        if suffix in next_container.suffixes:
+            container = next_container
+            suffix = suffixes.pop()
+            break
+    for next_format in formats.FORMATS:
+        if suffix in next_format.suffixes:
+            return Filetype(next_format(), container())
+    raise ValueError(f"Couldn't determine filetypes of {path}")

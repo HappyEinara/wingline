@@ -5,8 +5,8 @@ services:
     volumes:
       -  dynamodb:/home/dynamodblocal/data
     ports:
-      - 8000:8000
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data/"
+      - 8223:8223
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data/ -port 8223"
     user: root
   generator:
     build: ./build

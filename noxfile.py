@@ -10,11 +10,11 @@ TESTS_DIR = "tests"
 nox.options.envdir = os.environ.get("NOX_CACHE")
 nox.options.sessions = [
     "test",
+    "coverage",
     "lint_flake8",
     "lint_precommit",
     "lint_pylint",
     "lint_mypy",
-    "coverage",
 ]
 
 
@@ -23,6 +23,20 @@ def test(session):
     """Run tests."""
 
     tests = session.posargs or [TESTS_DIR]
+    session.install("-v", ".[tests]", silent=True)
+    session.run(
+        "python",
+        "-m",
+        "pytest",
+        "--numprocesses=auto",
+        *tests,
+    )
+
+
+@nox.session(python=["3.10"])
+def coverage(session):
+    """Check coverage."""
+
     session.install("-v", ".[tests]", silent=True)
     session.run("python", "-m", "coverage", "erase")
     session.run(
@@ -34,15 +48,7 @@ def test(session):
         PACKAGE_DIR,
         "--cov-append",
         "--cov-report=",
-        *tests,
     )
-
-
-@nox.session(python=["3.10"])
-def coverage(session):
-    """Check coverage."""
-
-    session.install("-v", ".[tests]", silent=True)
     session.run(
         "python",
         "-m",
@@ -60,7 +66,7 @@ def coverage(session):
 def lint_flake8(session):
     """Lint with flake8."""
 
-    files = session.posargs or [PACKAGE_DIR, TESTS_DIR]
+    files = session.posargs or [PACKAGE_DIR]
     session.install("flake8")
     session.run(
         "python",
@@ -88,7 +94,7 @@ def lint_precommit(session):
 def lint_mypy(session):
     """Check types with mypy."""
 
-    files = session.posargs or [PACKAGE_DIR, TESTS_DIR]
+    files = session.posargs or [PACKAGE_DIR]
     session.install(".[tests,lint]")
     session.run(
         "python",
@@ -102,7 +108,7 @@ def lint_mypy(session):
 def lint_pylint(session):
     """Lint with pylint."""
 
-    files = session.posargs or [PACKAGE_DIR, TESTS_DIR]
+    files = session.posargs or [PACKAGE_DIR]
     session.install(".[tests,lint]")
     session.run(
         "python",
@@ -141,6 +147,7 @@ def dev(session):
         "poetry", "install", "-Edev", "-Etests", "-Elint", "-Esecurity", external=True
     )
     tests = session.posargs or [TESTS_DIR]
+    session.run("python", "-m", "coverage", "erase")
     session.run(
         "python",
         "-m",
@@ -153,26 +160,10 @@ def dev(session):
         "--exitfirst",
         "-n",
         "auto",
-        "--cov",
-        PACKAGE_DIR,
+        "--log-cli-level=DEBUG",
+        f"--cov={PACKAGE_DIR}",
         "--cov-append",
         "--cov-report=",
-        *tests,
-    )
-    session.run("python", "-m", "bandit", "-r", PACKAGE_DIR)
-    session.run("python", "-m", "safety", "check")
-    session.run(
-        "python",
-        "-m",
-        "mypy",
-        PACKAGE_DIR,
-        silent=False,
-    )
-    session.run(
-        "python",
-        "-m",
-        "flake8",
-        PACKAGE_DIR,
         *tests,
     )
     session.run(
@@ -185,4 +176,26 @@ def dev(session):
         "--sort=miss",
         "--fail-under",
         "100",
+    )
+    session.run("python", "-m", "bandit", "-r", PACKAGE_DIR)
+    session.run("python", "-m", "safety", "check")
+    session.run(
+        "python",
+        "-m",
+        "flake8",
+        PACKAGE_DIR,
+        *tests,
+    )
+    session.run(
+        "python",
+        "-m",
+        "pylint",
+        PACKAGE_DIR,
+    )
+    session.run(
+        "python",
+        "-m",
+        "mypy",
+        PACKAGE_DIR,
+        silent=False,
     )

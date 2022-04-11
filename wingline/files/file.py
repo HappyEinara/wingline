@@ -4,60 +4,86 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
-from typing import Any, Generator, Optional
+from typing import Optional
 
 from wingline import hasher
-from wingline.files import filetype
+from wingline.files import filetype as ft
+from wingline.files import reader, writer
+from wingline.types import PayloadIterator
 
 logger = logging.getLogger(__name__)
 
 
 class File:
-    def __init__(self, path: pathlib.Path):
+    """High-level abstraction of a data file."""
+
+    def __init__(self, path: pathlib.Path, filetype: Optional[ft.Filetype] = None):
         self.path = path
-        self.reader = filetype.get_reader(self.path)
+        self.filetype = (
+            filetype if filetype is not None else ft.detect_filetype(self.path)
+        )
+
+    @property
+    def stem(self) -> str:
+        """Stem of the file."""
+        return self.path.stem.partition(".")[0]
 
     @property
     def stat(self) -> Optional[os.stat_result]:
+        """Stat of the file."""
         if self.exists:
             return self.path.stat()
+        return None
 
     @property
     def size(self) -> Optional[int]:
-        if stat := self.stat:
+        """Size of the file."""
+        stat = self.stat
+        if stat:
             return stat.st_size
+        return None
 
     @property
     def modified_at(self) -> Optional[int]:
-        if stat := self.stat:
+        """File modification date."""
+        stat = self.stat
+        if stat:
             return stat.st_mtime_ns
+        return None
 
     @property
-    def content_hash(self):
+    def content_hash(self) -> str:
+        """Hash of the file's content."""
         return hasher.hash_file(self.path)
 
-    @property
-    def output_hash(self):
-        return self.content_hash
+    def reader(self) -> reader.Reader:
+        """An iterating reader for the file."""
+        if not self.exists:
+            raise RuntimeError("Can't read from a nonexistent file.")
+        return reader.Reader(self.path, self.filetype)
+
+    def writer(self) -> writer.Writer:
+        """Return a writer manager for the file."""
+
+        if self.exists:
+            raise RuntimeError(f"{self.path} exists. Won't overwrite it.")
+        return writer.Writer(self.path, self.filetype)
 
     @property
-    def exists(self):
+    def exists(self) -> bool:
+        """Return True if the file exists."""
+
         return self.path.exists()
 
-    def _iterator(self) -> Generator[dict[str, Any], None, None]:
-        """Iterate over the lines in the file."""
-        with self.reader as reader:
-            for line in reader:
+    def __iter__(self) -> PayloadIterator:
+        """Return self to be used as an iterator."""
+        with self.reader() as iter_reader:
+            for line in iter_reader:
                 yield line
 
-    def __iter__(self) -> Generator[dict[str, Any], None, None]:
-        """Return self to be used as an iterator."""
+    def __str__(self) -> str:
+        return str(self.stem)
 
-        return self._iterator()
-
-    def __str__(self):
-        return str(self.path.name)
-
-    def __repr__(self):
-        hash = f"|{self.content_hash}" if self.content_hash else ""
-        return f"<F {str(self)}{hash}>"
+    def __repr__(self) -> str:
+        content_hash = f"|{self.content_hash}" if self.content_hash else ""
+        return f"<F {str(self)}{content_hash}>"

@@ -28,12 +28,15 @@ def version_callback(output_version: bool = False) -> None:
         raise typer.Exit()
 
 
+version_option = typer.Option(
+    None, "--version", callback=version_callback, is_eager=True
+)
+
+
 @app.callback()
 def callback(
     debug: bool = False,
-    version: Optional[bool] = typer.Option(
-        None, "--version", callback=version_callback, is_eager=True
-    ),
+    version: Optional[bool] = version_option,
     log_dir: Optional[pathlib.Path] = None,
 ) -> None:
     """The Wingline CLI."""

@@ -1,39 +1,63 @@
 """Format base class"""
+# pylint: disable=duplicate-code
+
+from __future__ import annotations
 
 import abc
-from typing import Any, BinaryIO, Iterable, Iterator
+import contextlib
+from typing import Any, BinaryIO, Callable, Generator, List
 
-from wingline.types import Payload
+from wingline.types import PayloadIterator, ReadPointer, WritePointer
 
 
-class Format(metaclass=abc.ABCMeta):
+class Format(abc.ABC):
     """Base class for a file format."""
 
-    mime_type: str
-    suffixes: Iterable[str] = set()
+    suffixes: List[str]
 
-    def __init__(self, handle: BinaryIO):
-        self._handle = handle
+    def __init__(self, **kwargs: Any):
+        self._kwargs = kwargs
 
-    @property
-    def reader(self) -> Iterator[dict[str, Any]]:
-        """Reader property"""
+    @contextlib.contextmanager
+    def read_manager(
+        self, handle: BinaryIO, **kwargs: Any
+    ) -> Generator[ReadPointer, None, None]:
+        """Return a Payload iterator for reading.
 
-        return self.read(self._handle)
+        This is the public interface which merges kwargs first.
+        """
 
-    def writer(self, payload: Payload) -> None:
-        """Writer property"""
+        # When py3.8 reaches EOL:
+        # kwargs = self._read_kwargs | kwargs
+        kwargs = {**self._kwargs, **kwargs}
+        with self.read(handle, **kwargs) as reader:
+            yield reader
 
-        self.write(self._handle, payload)
+    @contextlib.contextmanager
+    def write_manager(
+        self, handle: BinaryIO, **kwargs: Any
+    ) -> Generator[WritePointer, None, None]:
+        """Write a payload
+
+        This is the public interface which merges kwargs first.
+        """
+
+        # When py3.8 reaches EOL:
+        # kwargs = self._write_kwargs | kwargs
+        kwargs = {**self._kwargs, **kwargs}
+        with self.write(handle, **kwargs) as writer:
+            yield writer
 
     @abc.abstractmethod
-    def read(self, handle: BinaryIO) -> Iterator[dict[str, Any]]:
+    @contextlib.contextmanager
+    def read(
+        self, handle: BinaryIO, **kwargs: Any
+    ) -> Generator[Callable[..., PayloadIterator], None, None]:
         """Yields dicts from a file handle."""
 
-        raise NotImplementedError
-
     @abc.abstractmethod
-    def write(self, handle: BinaryIO, payload: Payload) -> None:
-        """Writes a payload dict to a file handle."""
-
-        raise NotImplementedError
+    @contextlib.contextmanager
+    def write(
+        self, handle: BinaryIO, **kwargs: Any
+    ) -> Generator[Callable[..., None], None, None]:
+        """Writes payload dicts to a file handle."""

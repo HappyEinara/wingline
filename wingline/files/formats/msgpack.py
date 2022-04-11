@@ -1,27 +1,68 @@
 """The MessagePack adapter."""
+# pylint: disable=duplicate-code
 
-from typing import Any, BinaryIO, Iterable
+import contextlib
+import datetime
+from decimal import Decimal
+from typing import Any, BinaryIO, Callable, Generator
 
 import msgpack
 
 from wingline.files.formats import _base
-from wingline.types import Payload
+from wingline.types import Payload, PayloadIterator
+
+
+# Defer test coverage until this is reimplemented
+# in a generic way for all formats.
+def recover(obj: Any) -> Any:  # pragma: no cover
+    """Try to recover from a TypeError."""
+
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, datetime.datetime):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: recover(v) for k, v in obj.items()}
+    if isinstance(obj, (list, set)):
+        return [recover(v) for v in obj]
+    return obj
 
 
 class Msgpack(_base.Format):
     """Msgpack format."""
 
-    mime_type = "application/x-msgpack"
-    suffixes = {".wingline", ".msgpack"}
+    suffixes = [".msgpack", ".wingline"]
 
-    def read(self, handle: BinaryIO) -> Iterable[dict[str, Any]]:
+    @contextlib.contextmanager
+    def read(
+        self, handle: BinaryIO, **kwargs: Any
+    ) -> Generator[Callable[..., PayloadIterator], None, None]:
         """Dict iterator."""
 
-        unpacker = msgpack.Unpacker(handle)
-        for item in unpacker:
-            yield item
+        kwargs.setdefault("strict_map_key", False)
 
-    def write(self, handle: BinaryIO, payload: Payload) -> None:
+        unpacker = msgpack.Unpacker(handle)
+
+        def _read() -> PayloadIterator:
+            """Innermost reader."""
+
+            for item in unpacker:
+                yield item
+
+        yield _read
+
+    @contextlib.contextmanager
+    def write(
+        self, handle: BinaryIO, **kwargs: Any
+    ) -> Generator[Callable[..., None], None, None]:
         """Writer."""
 
-        handle.write(msgpack.packb(payload))
+        def _write(payload: Payload) -> None:
+            try:
+                msg = msgpack.packb(payload, **kwargs)
+            except TypeError:  # pragma: no cover
+                payload = recover(payload)
+                msg = msgpack.packb(payload, **kwargs)
+            handle.write(msg)
+
+        yield _write

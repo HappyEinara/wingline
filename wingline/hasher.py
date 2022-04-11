@@ -2,15 +2,17 @@
 
 import hashlib
 import pathlib
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
-import dill as pickle  # nosec B403
+import dill as pickle  # type: ignore # nosec B403
 
 DIGEST_SIZE = 8
 HASH_BLOCK_SIZE = 4096
 
 
-def hasher(data: bytes = b"", digest_size=8, **kwargs):
+def hasher(data: bytes = b"", digest_size: int = DIGEST_SIZE, **kwargs: Any) -> Any:
+    """Return the standard hashlib hasher for all wingline hashes."""
+
     return hashlib.blake2b(data, digest_size=digest_size, **kwargs)
 
 
@@ -19,14 +21,37 @@ def hash_file(path: pathlib.Path) -> str:
 
     file_hash = hasher()
     with path.open("rb") as handle:
-        while chunk := handle.read(HASH_BLOCK_SIZE):
+        chunk = handle.read(HASH_BLOCK_SIZE)
+        while chunk:
             file_hash.update(chunk)
+            chunk = handle.read(HASH_BLOCK_SIZE)
     return file_hash.hexdigest()
 
 
-def hash_callable(callable: Callable[..., Any]) -> str:
+def _hash_object(obj: object) -> str:
+    """Hash an arbitrary python object.
+
+    Internal function to DRY the more specific public functions.
+    """
+
+    obj_pickle = pickle.dumps(obj)
+    obj_hash = hasher(obj_pickle).hexdigest()
+    return obj_hash
+
+
+def hash_sequence(sequence: Sequence[Any]) -> str:
+    """Hash a sequence."""
+
+    return _hash_object(sequence)
+
+
+def hash_callable(callable_to_hash: Callable[..., Any]) -> str:
     """Hash a callable."""
 
-    callable_pickle = pickle.dumps(callable)
-    callable_hash = hasher(callable_pickle).hexdigest()
-    return callable_hash
+    return _hash_object(callable_to_hash)
+
+
+def hash_string(input_str: str) -> str:
+    """Hash a string."""
+
+    return hasher(input_str.encode("utf-8")).hexdigest()

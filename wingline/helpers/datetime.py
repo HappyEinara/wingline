@@ -1,0 +1,87 @@
+"""Date and time helpers"""
+
+import datetime as dt
+from typing import Optional, Tuple, Union, cast
+
+from dateutil import parser
+
+from wingline.types import AllProcess, PayloadIterable, PayloadIterator
+
+FieldSpec = Union[
+    str,
+    Tuple[str],
+    Tuple[str, str],
+    Tuple[str, Optional[str], str],
+]
+
+
+def parse_field_spec(field: FieldSpec) -> Tuple[str, Optional[str], Optional[str]]:
+    """Validate and parse a field spec for date/datetime conversion."""
+
+    if isinstance(field, str):
+        return field, None, None
+    if isinstance(field, tuple):
+        if len(field) == 1:
+            if isinstance(field[0], str):
+                return field[0], None, None
+        if len(field) == 2:
+            field = cast(Tuple[str, str], field)
+            if isinstance(field[0], str) and isinstance(field[1], str):
+                return field[0], field[1], None
+        if len(field) == 3:
+            field = cast(Tuple[str, Optional[str], str], field)
+            if (
+                isinstance(field[0], str)
+                and (isinstance(field[1], str) or field[1] is None)
+                and isinstance(field[2], str)
+            ):
+                return field[0], field[1], field[2]
+    raise ValueError("Invalid field spec.")
+
+
+def datetime(*fields: FieldSpec, date_only: bool = False) -> AllProcess:
+    """Parse given fields into datetimes."""
+
+    fields_spec: dict[str, Tuple[Optional[str], Optional[str]]] = {}
+    for field in fields:
+        fieldname, output_format, input_format = parse_field_spec(field)
+        fields_spec[fieldname] = output_format, input_format
+
+    def _datetime(payloads: PayloadIterable) -> PayloadIterator:
+        """Convert specified fields to datetimes."""
+
+        for payload in payloads:
+            for field, formats in fields_spec.items():
+                output_format, input_format = formats
+                if field in payload:
+                    parsed_datetime: dt.datetime
+                    parsed: Union[dt.datetime, dt.date]
+                    if isinstance(payload[field], dt.datetime):
+                        parsed_datetime = payload[field]
+                    elif isinstance(payload[field], dt.date):
+                        parsed_datetime = dt.datetime.combine(
+                            payload[field], dt.time.min
+                        )
+                    elif input_format is not None:
+                        parsed_datetime = dt.datetime.strptime(
+                            payload[field], input_format
+                        )
+                    else:
+                        parsed_datetime = parser.parse(payload[field])
+                    if date_only:
+                        parsed = parsed_datetime.date()
+                    else:
+                        parsed = parsed_datetime
+                    if output_format is None:
+                        payload[field] = parsed
+                    else:
+                        payload[field] = parsed.strftime(output_format)
+            yield payload
+
+    return _datetime
+
+
+def date(*fields: FieldSpec) -> AllProcess:
+    """Parse given fields into dates."""
+
+    return datetime(*fields, date_only=True)

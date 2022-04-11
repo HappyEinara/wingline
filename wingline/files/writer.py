@@ -1,47 +1,60 @@
-"""High-level writer class."""
+"""Writer class."""
+# pylint: disable=duplicate-code
 
-import contextlib
+
+import logging
 import pathlib
-from typing import Callable, Generator, Iterator, Optional
+import tempfile
+from types import TracebackType
+from typing import BinaryIO, Optional, Type
 
-from wingline.files import containers, formats
-from wingline.types import Payload
+from wingline.files import filetype as ft
+from wingline.types import ContainerWriteManager, FormatWriteManager, WritePointer
+
+logger = logging.getLogger(__name__)
 
 
-class Writer:
+class Writer:  # pylint: disable=R0902
     """An abstract writer that can write data to any format in any container."""
 
-    def __init__(
-        self,
-        path: pathlib.Path,
-        format: type[formats.Format],
-        container: Optional[type[containers.Container]] = None,
-    ):
+    def __init__(self, path: pathlib.Path, filetype: ft.Filetype):
         self.path = path
-        self.container = (
-            container(self.path)
-            if container is not None
-            else containers.Container(path)
-        )
-        self.format = format
+        self.filetype = filetype
+        self._container_manager: ContainerWriteManager
+        self._container_handle: BinaryIO
+        self._format_manager: FormatWriteManager
+        self._temp_dir: tempfile.TemporaryDirectory[str]
+        self._temp_file: pathlib.Path
+        self.success = False
 
-    @contextlib.contextmanager
-    def _get_write_handle(self):
-        with self.container.write_handle() as _handle:
-            yield _handle
-
-    @contextlib.contextmanager
-    def _get_writer(self) -> Generator[Callable[[Payload], None], None, None]:
-        with self._get_write_handle() as _handle:
-            writer = self.format(_handle).writer
-            yield writer
-
-    def __enter__(self):
+    def __enter__(self) -> WritePointer:
         """Context manager entrypoint."""
-        self.writer = self._get_writer()
-        self.write = self.writer.__enter__()
-        return self.write
+        self._temp_dir = tempfile.TemporaryDirectory()
+        self._temp_file = pathlib.Path(self._temp_dir.__enter__()) / self.path.name
+        self._container_manager = self.filetype.container.write_manager(self._temp_file)
+        self._container_handle = self._container_manager.__enter__()
+        self._format_manager = self.filetype.format.write_manager(
+            self._container_handle
+        )
+        return self._format_manager.__enter__()
 
-    def __exit__(self, exception_type, exception, traceback):
+    def __exit__(
+        self,
+        exception_type: Optional[Type[BaseException]],
+        exception: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         """Context manager exitpoint."""
-        self.writer.__exit__(exception_type, exception, traceback)
+        self._format_manager.__exit__(exception_type, exception, traceback)
+        self._container_manager.__exit__(exception_type, exception, traceback)
+        if self.success:
+            logger.debug(
+                "%s: Pipeline was successful so far, so writing to %s", self, self.path
+            )
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self._temp_file.rename(self.path)
+        else:
+            logger.debug(
+                "%s: Pipeline failed, so not persisting output to %s", self, self.path
+            )
+        self._temp_dir.__exit__(exception_type, exception, traceback)

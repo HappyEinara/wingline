@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "wingline"
-version = "0.1.1"
+version = "0.1.2"
 description = "A simple line-based data reader and translator"
 authors = ["Dave Singer <dave.singer@einara.com>"]
 license = "MIT"
@@ -16,18 +16,27 @@ known_first_party = "wingline"
 
 [tool.vulture]
 paths = ["wingline", "tests"]
-exclude = ["settings.py"]
+exclude = [
+  "settings.py",
+  "tests/files/test_file_cases.py",
+  "wingline/vendored/",
+]
 
 [tool.poetry.dependencies]
 python = "^3.7.0"
-fastapi = "^0.65.2"
-pydantic = "^1.8.1"
-requests = "^2.25.1"
 filetype = "^1.0.10"
 cachelib = "^0.6.0"
-pytest-cases = { version = "^3.6.11", extras = ["tests"] }
 dill = "^0.3.4"
 msgpack = "^1.0.3"
+rich = { version = "^12.0.1", optional = true }
+pytest-cases = { version = "^3.6.11", optional = true }
+msgpack-types = { version = "^0.2.0", optional = true }
+pydantic = "^1.9.0"
+python-dateutil = "^2.8.2"
+types-python-dateutil = { version = "^2.8.10", optional = true }
+inflection = "^0.5.1"
+"yapic.json" = { version = "^1.7.2", optional = true }
+ujson = { version = "^5.2.0", optional = true }
 
 [tool.poetry.dev-dependencies]
 nox = "^2021.10.1 "
@@ -46,15 +55,33 @@ lint = [
   "pre-commit",
   "isort",
   "black",
+  "msgpack-types",
+  "types-python-dateutil",
 ]
 security = ["bandit", "safety"]
-tests = ["gitpython", "semver", "pytest-cov", "pytest-xdist", "coverage"]
+tests = [
+  "gitpython",
+  "semver",
+  "pytest-cov",
+  "pytest-xdist",
+  "coverage",
+  "pytest-cases",
+  "rich",
+  "yapic.json",
+]
+ui = ["rich"]
+yapic = ["yapic.json"]
+ujson = ["ujson"]
+
+[tool.coverage.run]
+omit = ["*/vendored/*"]
 
 [tool.poetry.scripts]
 wingline = "wingline.cli:app"
 
 [tool.pylint.master]
 extension-pkg-allow-list = ["pydantic"]
+ignore-paths = ["wingline/vendored/"]
 
 [tool.poetry.dependencies.typer]
 extras = ["all"]
@@ -69,6 +96,7 @@ version = "^21.5b0"
 optional = true
 
 [tool.poetry.dependencies.coverage]
+extras = ["toml"]
 version = "^5.5"
 optional = true
 

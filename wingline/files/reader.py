@@ -1,39 +1,39 @@
 """Reader class."""
+# pylint: disable=duplicate-code
 
-import contextlib
 import pathlib
-from typing import Any, Generator, Iterator
+from types import TracebackType
+from typing import BinaryIO, Optional, Type
 
-from wingline.files import filetype
+from wingline.files import filetype as ft
+from wingline.types import ContainerReadManager, FormatReadManager, PayloadIterator
 
 
 class Reader:
     """An abstract reader that yields dicts from any source."""
 
-    def __init__(
-        self,
-        path: pathlib.Path,
-    ):
+    def __init__(self, path: pathlib.Path, filetype: ft.Filetype):
         self.path = path
-        self.container = filetype.get_container(self.path)
-        self.format_type = filetype.detect_format(self.container)
+        self.filetype = filetype
+        self._container_manager: ContainerReadManager
+        self._container_handle: BinaryIO
+        self._format_manager: FormatReadManager
 
-    @contextlib.contextmanager
-    def _get_handle(self):
-        with self.container.handle() as _handle:
-            yield _handle
-
-    @contextlib.contextmanager
-    def _get_iterator(self) -> Generator[Iterator[dict[str, Any]], None, None]:
-        with self._get_handle() as _handle:
-            iterator = self.format_type(_handle).reader
-            yield iterator
-
-    def __enter__(self):
+    def __enter__(self) -> PayloadIterator:
         """Context manager entrypoint."""
-        self._iterator = self._get_iterator()
-        return self._iterator.__enter__()
 
-    def __exit__(self, exception_type, exception, traceback):
+        self._container_manager = self.filetype.container.read_manager(self.path)
+        self._container_handle = self._container_manager.__enter__()
+        self._format_manager = self.filetype.format.read_manager(self._container_handle)
+        reader_func = self._format_manager.__enter__()
+        return reader_func()
+
+    def __exit__(
+        self,
+        exception_type: Optional[Type[BaseException]],
+        exception: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         """Context manager exitpoint."""
-        self._iterator.__exit__(exception_type, exception, traceback)
+        self._format_manager.__exit__(exception_type, exception, traceback)
+        self._container_manager.__exit__(exception_type, exception, traceback)
