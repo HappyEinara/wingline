@@ -2,20 +2,21 @@
 
 import threading
 
-from wingline.plumbing import tap
-from wingline.plumbing.sinks import iteratorsink
+from wingline.plumbing import base
+from wingline.plumbing.sinks import iterator
 
 
-def test_basic():
+def test_basic() -> None:
+    """Test a very basic pair of pipes."""
 
-    input = [{"id": i} for i in range(10)]
+    pipe_input = [{"id": i} for i in range(10)]
 
-    pipeline = tap.Tap(input, "test_tap")
-    iter = iteratorsink.IteratorSink(pipeline, "test_iterator")
+    pipeline = base.Tap(pipe_input, "test_tap")
+    itersink = iterator.IteratorSink(pipeline, "test_iterator")
 
-    result = list(iter)
+    result = list(itersink)
 
-    assert result == input
+    assert result == pipe_input
 
     # There should only be the main thread left
     # Check the threading module's reports are

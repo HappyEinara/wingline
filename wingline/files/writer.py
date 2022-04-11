@@ -14,7 +14,7 @@ from wingline.types import ContainerWriteManager, FormatWriteManager, WritePoint
 logger = logging.getLogger(__name__)
 
 
-class Writer:
+class Writer:  # pylint: disable=R0902
     """An abstract writer that can write data to any format in any container."""
 
     def __init__(self, path: pathlib.Path, filetype: ft.Filetype):
@@ -25,6 +25,7 @@ class Writer:
         self._format_manager: FormatWriteManager
         self._temp_dir: tempfile.TemporaryDirectory[str]
         self._temp_file: pathlib.Path
+        self.success = False
 
     def __enter__(self) -> WritePointer:
         """Context manager entrypoint."""
@@ -42,12 +43,11 @@ class Writer:
         exception_type: Optional[Type[BaseException]],
         exception: Optional[BaseException],
         traceback: Optional[TracebackType],
-        success: bool = False,
     ) -> None:
         """Context manager exitpoint."""
         self._format_manager.__exit__(exception_type, exception, traceback)
         self._container_manager.__exit__(exception_type, exception, traceback)
-        if success:
+        if self.success:
             logger.debug(
                 "%s: Pipeline was successful so far, so writing to %s", self, self.path
             )

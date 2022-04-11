@@ -19,8 +19,8 @@ CASES = (
         ],
         "\n".join(
             [
-                '{"a": 3, "b": 3, "c": 3}',
-                '{"a": 4, "b": 4, "c": 4}',
+                '{"a":3,"b":3,"c":3}',
+                '{"a":4,"b":4,"c":4}',
             ]
         )
         + "\n",
@@ -29,15 +29,17 @@ CASES = (
 
 
 @pytest.mark.parametrize("input,expected", CASES)
-def test_write_fluent(input, expected, func_add_one, tmp_path):
+@pytest.mark.parametrize("output_path_as_str", [True, False])
+def test_write_fluent(
+    input, expected, func_add_one, tmp_path, output_path_as_str: bool
+):
     """The fluent interface works."""
 
     output_file = tmp_path / "test-write-fluent-output.jl"
+    if output_path_as_str:
+        output_file = str(output_file)
     test_pipeline = (
-        wingline.Pipeline(input)
-        .process(func_add_one)
-        .process(func_add_one)
-        .write(output_file)
+        wingline.Pipeline(input).all(func_add_one).all(func_add_one).write(output_file)
     )
 
     test_pipeline.run()
@@ -59,12 +61,12 @@ def test_write_fluent(input, expected, func_add_one, tmp_path):
     assert result == expected
 
 
-@pytest.mark.parametrize("input,expected", CASES)
+@pytest.mark.parametrize("input_data,expected", CASES)
 @pytest.mark.parametrize(
     "container", [None, containers.Bare, containers.Gzip, containers.Zip]
 )
 @pytest.mark.parametrize("format", [formats.JsonLines, formats.Csv, formats.Msgpack])
-def test_write_formats(input, expected, func_add_one, tmp_path, container, format):
+def test_write_formats(input_data, expected, func_add_one, tmp_path, container, format):
     """All formats and containers work."""
 
     container_suffix = (
@@ -76,9 +78,9 @@ def test_write_formats(input, expected, func_add_one, tmp_path, container, forma
     output_file = tmp_path / f"test_formats{format_suffix}{container_suffix}"
 
     test_pipeline = (
-        wingline.Pipeline(input)
-        .process(func_add_one)
-        .process(func_add_one)
+        wingline.Pipeline(input_data)
+        .all(func_add_one)
+        .all(func_add_one)
         .write(
             file.File(
                 output_file,

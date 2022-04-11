@@ -3,17 +3,17 @@
 from typing import Optional
 
 from wingline import hasher
-from wingline.plumbing import pipe
-from wingline.types import PayloadIterator, PipeProcess
+from wingline.plumbing import base
+from wingline.types import AllProcess, PayloadIterator
 
 
-class ProcessPipe(pipe.Pipe):
+class BasePipe(base.Plumbing):
     """A pipe that carries out a process on its input"""
 
     emoji = "⚙️"
 
     def __init__(
-        self, parent: pipe.BasePipe, process: PipeProcess, name: Optional[str] = None
+        self, parent: base.Plumbing, process: AllProcess, name: Optional[str] = None
     ):
         self._process = process
         name = name if name is not None else self._process.__name__

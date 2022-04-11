@@ -6,7 +6,7 @@ import pytest
 
 import wingline
 from wingline import helpers
-from wingline.types import PipeProcess
+from wingline.types import AllProcess
 
 KEYS = [
     # Input, snake, python, Pascal, camel
@@ -35,6 +35,7 @@ KEYS = [
 
 
 def key_cases():
+    """Return a set of key cases."""
     return (
         (
             [{k[0]: 1 for k in KEYS}],
@@ -47,14 +48,12 @@ def key_cases():
 
 
 def test_filter_keys(
-    add_one_input: List[Dict[str, Any]], func_add_one: PipeProcess
+    add_one_input: List[Dict[str, Any]], func_add_one: AllProcess
 ) -> None:
     """The filter keys helper works."""
 
     filter_pipeline = (
-        wingline.Pipeline(add_one_input)
-        .process(func_add_one)
-        .process(helpers.filter("a"))
+        wingline.Pipeline(add_one_input).all(func_add_one).all(helpers.keys.filter("a"))
     )
     filter_result = list(filter_pipeline)
     assert filter_result == [
@@ -64,14 +63,12 @@ def test_filter_keys(
 
 
 def test_remove_keys(
-    add_one_input: List[Dict[str, Any]], func_add_one: PipeProcess
+    add_one_input: List[Dict[str, Any]], func_add_one: AllProcess
 ) -> None:
     """The filter keys helper works."""
 
     filter_pipeline = (
-        wingline.Pipeline(add_one_input)
-        .process(func_add_one)
-        .process(helpers.remove("a"))
+        wingline.Pipeline(add_one_input).all(func_add_one).all(helpers.keys.remove("a"))
     )
     filter_result = list(filter_pipeline)
     assert filter_result == [
@@ -90,11 +87,11 @@ def test_key_transliteration(
 ) -> None:
     """Test that the key transliteration helpers work."""
 
-    snake_result = list(wingline.Pipeline(input).process(helpers.snake))
+    snake_result = list(wingline.Pipeline(input).all(helpers.keys.snake))
     assert snake_result == snake
-    python_result = list(wingline.Pipeline(input).process(helpers.python))
+    python_result = list(wingline.Pipeline(input).all(helpers.keys.python))
     assert python_result == python
-    pascal_result = list(wingline.Pipeline(input).process(helpers.pascal))
+    pascal_result = list(wingline.Pipeline(input).all(helpers.keys.pascal))
     assert pascal_result == pascal
-    camel_result = list(wingline.Pipeline(input).process(helpers.camel))
+    camel_result = list(wingline.Pipeline(input).all(helpers.keys.camel))
     assert camel_result == camel

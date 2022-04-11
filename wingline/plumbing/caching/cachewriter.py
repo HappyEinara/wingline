@@ -6,18 +6,18 @@ from typing import Optional
 
 from wingline.cache import intermediate
 from wingline.files import file, writer
-from wingline.plumbing import pipe
+from wingline.plumbing import base
 from wingline.types import PayloadIterable, PayloadIterator, WritePointer
 
 
-class CacheWriter(pipe.Pipe):
+class CacheWriter(base.Plumbing):
     """A pipe to write the parent's output to a cache file."""
 
     emoji = "⏩☁️"
 
     def __init__(
         self,
-        parent: pipe.BasePipe,
+        parent: base.Plumbing,
         cache_path: pathlib.Path,
         name: Optional[str] = None,
     ):
@@ -49,7 +49,8 @@ class CacheWriter(pipe.Pipe):
         """Close the writer."""
         if not self._writer:  # pragma: no cover
             raise RuntimeError("Can't close writer: was it opened?")
-        self._writer.__exit__(None, None, None, success=success)
+        self._writer.success = success
+        self._writer.__exit__(None, None, None)
 
     def __str__(self) -> str:
         return f"{self.emoji}CacheWriter[{self.hash}]"

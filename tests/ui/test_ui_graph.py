@@ -25,15 +25,27 @@ CASES = (
 
 @pytest.mark.parametrize("input,expected", CASES)
 def test_ui_graph(input, expected, func_add_one, tmp_path):
-    """The fluent interface works."""
+    """The graph UI doesn't raise."""
 
     output_file = tmp_path / "test-write-fluent-output.jl"
+    cache_dir = tmp_path / "cache"
+
+    # Run twice so the rendering of
+    # inactive processes can be run.
     test_pipeline = (
-        wingline.Pipeline(input)
-        .process(func_add_one)
-        .process(func_add_one)
+        wingline.Pipeline(input, cache_dir=cache_dir)
+        .all(func_add_one)
+        .all(func_add_one)
         .write(output_file)
     )
+    test_pipeline.run()
+    test_pipeline = (
+        wingline.Pipeline(input, cache_dir=cache_dir)
+        .all(func_add_one)
+        .all(func_add_one)
+        .write(output_file)
+    )
+    test_pipeline.run()
 
     graph = test_pipeline.graph
 

@@ -1,9 +1,11 @@
 """Test the graph."""
+import pathlib
 import threading
 
 import pytest
 
 import wingline
+from wingline.types import AllProcess, PayloadIterable
 
 CASES = (
     (
@@ -28,10 +30,7 @@ def test_graph(input, _, func_add_one, tmp_path):
 
     output_file = tmp_path / "test-write-fluent-output.jl"
     test_pipeline = (
-        wingline.Pipeline(input)
-        .process(func_add_one)
-        .process(func_add_one)
-        .write(output_file)
+        wingline.Pipeline(input).all(func_add_one).all(func_add_one).write(output_file)
     )
 
     graph = test_pipeline.graph.dict
@@ -56,12 +55,26 @@ def test_start_twice(input, _, func_add_one, tmp_path):
 
     output_file = tmp_path / "test-write-fluent-output.jl"
     test_pipeline = (
-        wingline.Pipeline(input)
-        .process(func_add_one)
-        .process(func_add_one)
-        .write(output_file)
+        wingline.Pipeline(input).all(func_add_one).all(func_add_one).write(output_file)
     )
 
     list(test_pipeline.graph.taps)[0].start()
     with pytest.raises(RuntimeError):
         test_pipeline.graph.run()
+
+
+def test_print_graph(
+    add_one_input: PayloadIterable, func_add_one: AllProcess, tmp_path: pathlib.Path
+) -> None:
+    """The print method doesn't raise."""
+
+    output_file = tmp_path / "test-write-fluent-output.jl"
+    test_pipeline = (
+        wingline.Pipeline(add_one_input)
+        .all(func_add_one)
+        .all(func_add_one)
+        .write(output_file)
+    )
+
+    graph = test_pipeline.graph
+    graph.print()

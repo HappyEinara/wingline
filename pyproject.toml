@@ -16,7 +16,11 @@ known_first_party = "wingline"
 
 [tool.vulture]
 paths = ["wingline", "tests"]
-exclude = ["settings.py", "tests/files/test_file_cases.py"]
+exclude = [
+  "settings.py",
+  "tests/files/test_file_cases.py",
+  "wingline/vendored/",
+]
 
 [tool.poetry.dependencies]
 python = "^3.7.0"
@@ -77,6 +81,7 @@ wingline = "wingline.cli:app"
 
 [tool.pylint.master]
 extension-pkg-allow-list = ["pydantic"]
+ignore-paths = ["wingline/vendored/"]
 
 [tool.poetry.dependencies.typer]
 extras = ["all"]

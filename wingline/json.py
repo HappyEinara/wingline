@@ -10,7 +10,7 @@ try:
     from yapic import json
 
     logger.debug("Optional dependency found: json is yapic.json")
-except ImportError:
+except ImportError:  # pragma: no cover
     try:
         import ujson as json  # type: ignore
 

@@ -1,0 +1,35 @@
+"""Parse a DynamoDb export containing Wikidata entries on TV shows and cast members."""
+
+
+import pathlib
+
+from wingline import helpers
+from wingline.pipeline import Pipeline
+
+INPUT_PATH = pathlib.Path(__file__).parents[2] / "data" / "dynamodb-tv-casts.jl.gz"
+
+
+def run_pipeline(input_path: pathlib.Path) -> None:
+    """Run a simple but powerful pipeline."""
+
+    pipeline = Pipeline(input_path).process(helpers.dynamodb_deserialize).pretty()
+
+    pipeline.run()
+    pipeline.show_graph()
+
+
+def main() -> None:
+    """Run the main process."""
+
+    input_path = INPUT_PATH
+
+    if not input_path.exists():
+        raise RuntimeError(f"Input path {input_path} doesn't exist!")
+
+    print(f"🎉 Input path {input_path} found!")
+
+    run_pipeline(input_path)
+
+
+if __name__ == "__main__":
+    main()

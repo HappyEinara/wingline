@@ -1,6 +1,7 @@
 """Base plumbing classes."""
 from __future__ import annotations
 
+import collections.abc
 import logging
 import pathlib
 import threading
@@ -8,8 +9,9 @@ from dataclasses import dataclass
 from queue import Empty
 from typing import Callable, Optional, Set
 
+from wingline import hasher
 from wingline.plumbing import queue
-from wingline.types import SENTINEL, PayloadIterator, PipeProcess
+from wingline.types import SENTINEL, AllProcess, PayloadIterable, PayloadIterator
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +28,9 @@ class PipeQueues:
 class PipeCallbacks:
     """Callbacks for a pipe."""
 
-    process: PipeProcess
+    process: AllProcess
     setup: Callable[[], None]
-    teardown: Callable[[], None]
+    teardown: Callable[[bool], None]
 
 
 class PipeThread(threading.Thread):
@@ -78,7 +80,7 @@ class PipeThread(threading.Thread):
             for output_payload in self.callbacks.process(  # type: ignore
                 self._iter_input()
             ):
-                if self.abort_event.is_set():
+                if self.abort_event.is_set():  # pragma: no cover
                     logger.debug("%s thread run got abort event at output.", self)
                     break
                 for output_queue in self.queues.output:
@@ -87,9 +89,11 @@ class PipeThread(threading.Thread):
             for output_queue in self.queues.output:
                 output_queue.put(SENTINEL, timeout=1)
 
-            self.callbacks.teardown(success=(not self.abort_event.is_set()))  # type: ignore
+            self.callbacks.teardown(  # type: ignore
+                success=(not self.abort_event.is_set())
+            )
 
-        except Exception as exc:
+        except Exception as exc:  # pylint:disable=W0703
             logger.error("%s: Error in thread:", self)
             logger.exception(exc)
             self.abort_event.set()
@@ -101,9 +105,9 @@ class PipeRelationships:
 
     def __init__(
         self,
-        pipe: BasePipe,
-        parent: Optional[BasePipe] = None,
-        children: Optional[Set[BasePipe]] = None,
+        pipe: Plumbing,
+        parent: Optional[Plumbing] = None,
+        children: Optional[Set[Plumbing]] = None,
     ):
         self.pipe = pipe
         self.parent = parent
@@ -115,12 +119,12 @@ class PipeRelationships:
             return
         self.parent.add_child(self.pipe)
 
-    def add_child(self, other: BasePipe) -> None:
+    def add_child(self, other: Plumbing) -> None:
         """Add a child pipe."""
         self.children.add(other)
 
 
-class BasePipe:
+class Plumbing:  # pylint: disable=too-many-instance-attributes
     """Base pipe."""
 
     emoji = "🠞"
@@ -129,8 +133,8 @@ class BasePipe:
 
     def __init__(
         self,
+        parent: Optional[Plumbing],
         name: str,
-        relationships: PipeRelationships,
         cache_dir: Optional[pathlib.Path] = None,
     ) -> None:
         self.name = name
@@ -138,7 +142,15 @@ class BasePipe:
             input=queue.Queue(name=f"input-{self.name}"),
             output=set(),
         )
-        self.relationships = relationships
+        self.relationships = PipeRelationships(self, parent=parent, children=set())
+
+        self.hash: Optional[str] = (
+            self.relationships.parent.hash if self.relationships.parent else None
+        )
+        self.description: Optional[str] = (
+            self.relationships.parent.description if self.relationships.parent else None
+        )
+
         self.relationships.register_with_parent()
         self.abort_event: threading.Event = (
             self.relationships.parent.abort_event
@@ -157,9 +169,8 @@ class BasePipe:
             )
         )
         self.is_active: bool = True
-        self.is_sink: bool = False
 
-    def add_child(self, other: BasePipe) -> None:
+    def add_child(self, other: Plumbing) -> None:
         """Register a child so it's input queue receives this pipe's output."""
 
         self.relationships.add_child(other)
@@ -185,7 +196,7 @@ class BasePipe:
 
     def start(self) -> None:
         """Start the process."""
-        if not self.is_active:
+        if not self.is_active:  # pragma no cover
             raise RuntimeError(f"{self}: Inactive pipe was started.")
         logger.debug("%s: Starting...", self)
         if self._started:
@@ -193,8 +204,13 @@ class BasePipe:
         self._started = True
         self.thread.start()
         logger.debug("%s: Started thread", self)
+
+        # Sinks may have already been started by
+        # the Graph; this is not an error condition
+        # so we should not attempt to start it again.
         if self.relationships.parent and not (
-            self.relationships.parent.is_sink and self.relationships.parent.started
+            isinstance(self.relationships.parent, Sink)
+            and self.relationships.parent.started
         ):
             logger.debug("%s: Starting parent %s...", self, self.relationships.parent)
             self.relationships.parent.start()
@@ -224,14 +240,14 @@ class BasePipe:
         if not self._started:  # pragma: no cover
             raise RuntimeError("Cant run process in pipe that hasn't started.")
         for payload in payloads:
-            if self.abort_event.is_set():
+            if self.abort_event.is_set():  # pragma: no cover
                 break
             yield payload
 
     def setup(self) -> None:
         """Set up before processing."""
 
-    def teardown(self, success: bool = False) -> None:
+    def teardown(self, success: bool = False) -> None:  # pylint: disable=R0201
         """Tidy up after processing."""
 
     def __str__(self) -> str:
@@ -241,20 +257,46 @@ class BasePipe:
         return f"<{str(self)}-{id(self)}>"
 
 
-class Pipe(BasePipe):
-    """Pipe."""
+class Tap(Plumbing):
+    """A Pipe subclass with no parent, generating output from some other source."""
 
-    def __init__(self, parent: BasePipe, name: str) -> None:
+    emoji = "﹛﹜↦"
 
-        relationships = PipeRelationships(
-            pipe=self,
-            parent=parent,
-            children=set(),
-        )
-        super().__init__(name, relationships)
-        self.hash: Optional[str] = (
-            self.relationships.parent.hash if self.relationships.parent else None
-        )
-        self.description: Optional[str] = (
-            self.relationships.parent.description if self.relationships.parent else None
-        )
+    def __init__(
+        self,
+        source: PayloadIterable,
+        name: str,
+        cache_dir: Optional[pathlib.Path] = None,
+    ) -> None:
+        super().__init__(None, name=name, cache_dir=cache_dir)
+        self.source = source
+        if isinstance(source, collections.abc.Sequence):
+            self.hash = hasher.hash_sequence(source)
+        else:
+            self.hash = None
+
+    def start(self) -> None:
+        """Start the process."""
+
+        if self._started:  # pragma: no cover
+            raise RuntimeError("Attempted to start a pipe for the second time.")
+        self._started = True
+        self.thread.start()
+        logger.debug("(Tap) %s: started thread.", self)
+        for payload in self.source:
+            if self.abort_event.is_set():  # pragma: no cover
+                logger.debug("(Tap) %s: received abort event.", self)
+                break
+            self.queues.input.put(payload)
+        self.queues.input.put(SENTINEL)
+
+
+class Sink(Plumbing):
+    """A pipe that has an output and must always run.
+
+    Note that a sink may still have downstream children.
+    Subclassing this means that it will run even if it's the
+    ancestor of a cached ProcessPipe
+    """
+
+    emoji = "⇥"

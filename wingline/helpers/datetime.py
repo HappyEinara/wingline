@@ -5,7 +5,7 @@ from typing import Optional, Tuple, Union, cast
 
 from dateutil import parser
 
-from wingline.types import PayloadIterable, PayloadIterator, PipeProcess
+from wingline.types import AllProcess, PayloadIterable, PayloadIterator
 
 FieldSpec = Union[
     str,
@@ -39,7 +39,7 @@ def parse_field_spec(field: FieldSpec) -> Tuple[str, Optional[str], Optional[str
     raise ValueError("Invalid field spec.")
 
 
-def datetime(*fields: FieldSpec, date_only: bool = False) -> PipeProcess:
+def datetime(*fields: FieldSpec, date_only: bool = False) -> AllProcess:
     """Parse given fields into datetimes."""
 
     fields_spec: dict[str, Tuple[Optional[str], Optional[str]]] = {}
@@ -81,7 +81,7 @@ def datetime(*fields: FieldSpec, date_only: bool = False) -> PipeProcess:
     return _datetime
 
 
-def date(*fields: FieldSpec) -> PipeProcess:
+def date(*fields: FieldSpec) -> AllProcess:
     """Parse given fields into dates."""
 
     return datetime(*fields, date_only=True)

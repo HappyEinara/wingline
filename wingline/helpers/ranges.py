@@ -2,10 +2,10 @@
 
 import collections
 
-from wingline.types import Payload, PayloadIterator, PipeProcess
+from wingline.types import AllProcess, Payload, PayloadIterator
 
 
-def head(count: int = 10) -> PipeProcess:
+def head(count: int = 10) -> AllProcess:
     """Return the first `count` values seen."""
 
     state = {"count": count, "seen": 0}
@@ -22,7 +22,7 @@ def head(count: int = 10) -> PipeProcess:
     return _head
 
 
-def tail(count: int = 10) -> PipeProcess:
+def tail(count: int = 10) -> AllProcess:
     """Return the last `count` values seen."""
 
     deque: collections.deque[Payload] = collections.deque(maxlen=count)

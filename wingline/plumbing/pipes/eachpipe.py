@@ -2,19 +2,19 @@
 
 from typing import Optional
 
-from wingline.plumbing import pipe
-from wingline.plumbing.pipes import processpipe
-from wingline.types import EachProcess, PayloadIterable, PayloadIterator, PipeProcess
+from wingline.plumbing import base
+from wingline.plumbing.pipes import basepipe
+from wingline.types import AllProcess, EachProcess, PayloadIterable, PayloadIterator
 
 
-class EachPipe(processpipe.ProcessPipe):
+class EachPipe(basepipe.BasePipe):
     """A pipe that carries out a process on its input"""
 
     emoji = "⚙️"
 
     def __init__(
         self,
-        parent: pipe.BasePipe,
+        parent: base.Plumbing,
         each_process: EachProcess,
         name: Optional[str] = None,
     ):
@@ -23,7 +23,7 @@ class EachPipe(processpipe.ProcessPipe):
         super().__init__(parent, process, name)
 
     @staticmethod
-    def each_process(each_process: EachProcess) -> PipeProcess:
+    def each_process(each_process: EachProcess) -> AllProcess:
         """Do the processing."""
 
         def _each_process(payloads: PayloadIterable) -> PayloadIterator:

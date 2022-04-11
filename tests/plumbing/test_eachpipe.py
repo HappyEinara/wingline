@@ -3,13 +3,13 @@
 from typing import Dict, List
 
 import wingline
-from wingline.types import EachProcess, PipeProcess
+from wingline.types import AllProcess, EachProcess
 
 
 def test_each_process(
     add_one_input: List[Dict[str, int]],
     add_one_output_twice: List[Dict[str, int]],
-    func_add_one: PipeProcess,
+    func_add_one: AllProcess,
     func_each_add_one: EachProcess,
 ) -> None:
     """Joining a pipe that hasn't started raises a runtime error."""
@@ -23,7 +23,7 @@ def test_each_process(
 
     # Cross-check with .process()
     process_pipeline = (
-        wingline.Pipeline(add_one_input).process(func_add_one).process(func_add_one)
+        wingline.Pipeline(add_one_input).all(func_add_one).all(func_add_one)
     )
     process_result = list(process_pipeline)
 

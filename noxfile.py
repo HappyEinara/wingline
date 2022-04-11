@@ -24,6 +24,20 @@ def test(session):
 
     tests = session.posargs or [TESTS_DIR]
     session.install("-v", ".[tests]", silent=True)
+    session.run(
+        "python",
+        "-m",
+        "pytest",
+        "--numprocesses=auto",
+        *tests,
+    )
+
+
+@nox.session(python=["3.10"])
+def coverage(session):
+    """Check coverage."""
+
+    session.install("-v", ".[tests]", silent=True)
     session.run("python", "-m", "coverage", "erase")
     session.run(
         "python",
@@ -34,15 +48,7 @@ def test(session):
         PACKAGE_DIR,
         "--cov-append",
         "--cov-report=",
-        *tests,
     )
-
-
-@nox.session(python=["3.10"])
-def coverage(session):
-    """Check coverage."""
-
-    session.install("-v", ".[tests]", silent=True)
     session.run(
         "python",
         "-m",

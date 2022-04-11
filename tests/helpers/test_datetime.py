@@ -9,7 +9,7 @@ import pytest
 
 import wingline
 from wingline import helpers
-from wingline.types import PipeProcess
+from wingline.types import AllProcess
 
 # Cheatsheet: https://strftime.org/
 
@@ -73,11 +73,9 @@ def test_datetimes(
         )
 
     if use_one_tuple:
-        test_pipeline = wingline.Pipeline(cases).process(
-            helpers.datetime(("datetime",))
-        )
+        test_pipeline = wingline.Pipeline(cases).all(helpers.datetime(("datetime",)))
     else:
-        test_pipeline = wingline.Pipeline(cases).process(helpers.datetime("datetime"))
+        test_pipeline = wingline.Pipeline(cases).all(helpers.datetime("datetime"))
     result = list(test_pipeline)
     assert len(result) == len(cases)
 
@@ -97,7 +95,7 @@ def test_dates(cases: List[Dict[str, Any]], input_format: str) -> None:
             }
         )
 
-    test_pipeline = wingline.Pipeline(cases).process(helpers.date("date"))
+    test_pipeline = wingline.Pipeline(cases).all(helpers.date("date"))
     result = list(test_pipeline)
     assert len(result) == len(cases)
 
@@ -119,7 +117,7 @@ def test_datetimes_with_explicit_input_format(
             }
         )
 
-    test_pipeline = wingline.Pipeline(cases).process(
+    test_pipeline = wingline.Pipeline(cases).all(
         helpers.datetime(("datetime", None, input_format))
     )
     result = list(test_pipeline)
@@ -143,7 +141,7 @@ def test_dates_with_explicit_input_format(
             }
         )
 
-    test_pipeline = wingline.Pipeline(cases).process(
+    test_pipeline = wingline.Pipeline(cases).all(
         helpers.date(("date", None, input_format))
     )
     result = list(test_pipeline)
@@ -169,7 +167,7 @@ def test_datetimes_with_explicit_output_format(
             }
         )
 
-    test_pipeline = wingline.Pipeline(cases).process(
+    test_pipeline = wingline.Pipeline(cases).all(
         helpers.datetime(("datetime", output_format))
     )
     result = list(test_pipeline)
@@ -198,9 +196,7 @@ def test_dates_with_explicit_output_format(
             }
         )
 
-    test_pipeline = wingline.Pipeline(cases).process(
-        helpers.date(("date", output_format))
-    )
+    test_pipeline = wingline.Pipeline(cases).all(helpers.date(("date", output_format)))
     result = list(test_pipeline)
     assert len(result) == len(cases)
 
@@ -228,7 +224,7 @@ def test_datetimes_with_explicit_input_and_output_format(
             }
         )
 
-    test_pipeline = wingline.Pipeline(cases).process(
+    test_pipeline = wingline.Pipeline(cases).all(
         helpers.datetime(("datetime", output_format, input_format))
     )
     result = list(test_pipeline)
@@ -257,7 +253,7 @@ def test_dates_with_explicit_input_and_output_format(
             }
         )
 
-    test_pipeline = wingline.Pipeline(cases).process(
+    test_pipeline = wingline.Pipeline(cases).all(
         helpers.date(("date", output_format, input_format))
     )
     result = list(test_pipeline)
@@ -286,7 +282,7 @@ def test_datetimes_with_native_payload(
             }
         )
 
-    test_pipeline = wingline.Pipeline(cases).process(
+    test_pipeline = wingline.Pipeline(cases).all(
         helpers.datetime(("datetime", output_format))
     )
     result = list(test_pipeline)
@@ -315,9 +311,7 @@ def test_dates_with_native_payload(
             }
         )
 
-    test_pipeline = wingline.Pipeline(cases).process(
-        helpers.date(("date", output_format))
-    )
+    test_pipeline = wingline.Pipeline(cases).all(helpers.date(("date", output_format)))
     result = list(test_pipeline)
     assert len(result) == len(cases)
 
@@ -358,9 +352,9 @@ def test_dates_with_native_payload(
 def test_dates_bad_spec(
     cases: List[Dict[str, Any]],
     bad_spec: Any,
-    helper: Callable[..., PipeProcess],
+    helper: Callable[..., AllProcess],
 ) -> None:
     """Test bad params to datetime and date fail."""
 
     with pytest.raises(ValueError):
-        wingline.Pipeline(cases).process(helper(bad_spec))
+        wingline.Pipeline(cases).all(helper(bad_spec))

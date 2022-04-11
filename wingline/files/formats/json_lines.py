@@ -47,7 +47,7 @@ class JsonLines(_base.Format):
             kwargs = {**default_kwargs, **kwargs}
             try:
                 output = json.dumps(payload, **kwargs)
-            except TypeError as exc:
+            except TypeError as exc:  # pragma: no cover
                 logger.error("Bad payload: %s", str(payload))
                 logger.exception(exc)
                 raise TypeError(f"Couldn't encode payload with {json}") from exc

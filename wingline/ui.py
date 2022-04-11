@@ -5,10 +5,9 @@ from __future__ import annotations
 import functools
 import sys
 import warnings
-from typing import Any, Callable, Dict
+from typing import TYPE_CHECKING, Any, Callable, Dict
 
-from wingline import graph
-from wingline.plumbing import pipe
+from wingline.plumbing import base
 
 try:
     import rich.console
@@ -16,6 +15,9 @@ try:
     import rich.tree
 except ImportError:  # pragma: no cover
     pass
+
+if TYPE_CHECKING:  # pragma: no cover
+    from wingline import graph
 
 
 def warn_if_unavailable(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -35,7 +37,7 @@ def warn_if_unavailable(func: Callable[..., Any]) -> Callable[..., Any]:
 
 
 @warn_if_unavailable
-def render_pipe(top_pipe: pipe.BasePipe) -> rich.text.Text:
+def render_pipe(top_pipe: base.Plumbing) -> rich.text.Text:
     """Pretty print a view of the graph descending from a pipe."""
 
     if top_pipe.is_active:
@@ -49,7 +51,7 @@ def graph_tree(input_graph: graph.PipelineGraph) -> rich.tree.Tree:
 
     tree = rich.tree.Tree(input_graph.name)
 
-    def add_graph(tree: rich.tree.Tree, graph_dict: Dict[pipe.BasePipe, Any]) -> None:
+    def add_graph(tree: rich.tree.Tree, graph_dict: Dict[base.Plumbing, Any]) -> None:
         for node, children in graph_dict.items():
             subtree = tree.add(render_pipe(node))
             add_graph(subtree, children)

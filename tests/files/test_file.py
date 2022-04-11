@@ -9,7 +9,7 @@ import pytest_cases
 from wingline import pipeline
 from wingline.files import file
 from wingline.files import filetype as ft
-from wingline.plumbing.sinks import iteratorsink
+from wingline.plumbing.sinks import iterator
 from wingline.plumbing.taps import filetap
 
 
@@ -25,7 +25,7 @@ def test_filetap(
     else:
         test_file = file.File(path, ft.Filetype(format_type(), container_type()))
     tap = filetap.FileTap(test_file, "test_file_tap")
-    pipe_iterator = iteratorsink.IteratorSink(tap, "test_iterator_sink")
+    pipe_iterator = iterator.IteratorSink(tap, "test_iterator_sink")
 
     result = list(pipe_iterator)
 

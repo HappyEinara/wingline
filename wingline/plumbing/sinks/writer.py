@@ -7,20 +7,20 @@ from typing import Union
 
 from wingline.files import file as fl
 from wingline.files import writer
-from wingline.plumbing import pipe, sink
+from wingline.plumbing import base
 from wingline.types import PayloadIterable, PayloadIterator, WritePointer
 
 logger = logging.getLogger(__name__)
 
 
-class WriterSink(sink.Sink):
+class WriterSink(base.Sink):
     """A sink that writes to a file."""
 
     emoji = "💾"
 
     def __init__(
         self,
-        parent: pipe.BasePipe,
+        parent: base.Plumbing,
         file: Union[pathlib.Path, fl.File],
         name: str,
     ):
@@ -37,7 +37,8 @@ class WriterSink(sink.Sink):
         logger.debug("Got writer.")
 
     def teardown(self, success: bool = False) -> None:
-        self._writer.__exit__(None, None, None, success=success)
+        self._writer.success = success
+        self._writer.__exit__(None, None, None)
 
     def process(self, payloads: PayloadIterable) -> PayloadIterator:
         """Write the payload."""

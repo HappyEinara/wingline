@@ -7,7 +7,13 @@ from pytest_cases import fixture, parametrize
 
 from wingline.files.containers import Gzip, Zip
 from wingline.files.formats import Csv, JsonLines
-from wingline.types import EachProcess, Payload, PayloadIterable
+from wingline.types import (
+    AllProcess,
+    EachProcess,
+    Payload,
+    PayloadIterable,
+    PayloadIterator,
+)
 
 TEST_FILES = [
     (
@@ -97,6 +103,14 @@ def add_one_input():
 
 
 @fixture
+def add_one_output_once():
+    return [
+        {"a": 2, "b": 2, "c": 2},
+        {"a": 3, "b": 3, "c": 3},
+    ]
+
+
+@fixture
 def add_one_output_twice():
     return [
         {"a": 3, "b": 3, "c": 3},
@@ -125,3 +139,18 @@ def func_each_add_one() -> EachProcess:
         return {k: v + 1 for (k, v) in payload.items()}
 
     return each_add_one
+
+
+@fixture
+def bad_all_process() -> AllProcess:
+    """A process that raises an exception."""
+
+    def _deliberate_failure(
+        payloads: PayloadIterable,
+    ) -> PayloadIterator:  # type: ignore
+        """A process that raises an exception."""
+
+        for _ in payloads:
+            raise RuntimeError("This is intentional.")
+
+    return _deliberate_failure

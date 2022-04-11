@@ -5,10 +5,10 @@ import pathlib
 from typing import Optional
 
 from wingline.files import file
-from wingline.plumbing import pipe, tap
+from wingline.plumbing import base
 
 
-class FileTap(tap.Tap):
+class FileTap(base.Tap):
     """A tap that uses a wingline File as a source."""
 
     emoji = "📄↦"
@@ -18,8 +18,7 @@ class FileTap(tap.Tap):
         source_file: file.File,
         name: str,
         cache_dir: Optional[pathlib.Path] = None,
-        parent: Optional[pipe.BasePipe] = None,
     ) -> None:
-        super().__init__(source_file, name, cache_dir=cache_dir, parent=parent)
+        super().__init__(source_file, name, cache_dir=cache_dir)
         self.hash = source_file.content_hash
         self.description = f"File[{source_file.path.name}]"

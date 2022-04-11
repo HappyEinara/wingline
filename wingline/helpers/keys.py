@@ -4,12 +4,12 @@ import re
 
 import inflection
 
-from wingline.types import PayloadIterable, PayloadIterator, PipeProcess
+from wingline.types import AllProcess, PayloadIterable, PayloadIterator
 
 RE_PYTHON_IDENTIFIER_INVALID_CHAR_REGEX = re.compile(r"[^0-9A-Za-z_]+")
 
 
-def filter(*keys: str) -> PipeProcess:  # pylint: disable=redefined-builtin
+def filter(*keys: str) -> AllProcess:  # pylint: disable=redefined-builtin
     """Strip all but the specified keys."""
 
     def _filter_keys(payloads: PayloadIterable) -> PayloadIterator:
@@ -21,7 +21,7 @@ def filter(*keys: str) -> PipeProcess:  # pylint: disable=redefined-builtin
     return _filter_keys
 
 
-def remove(*keys: str) -> PipeProcess:
+def remove(*keys: str) -> AllProcess:
     """Strip the specified keys."""
 
     def _remove_keys(payloads: PayloadIterable) -> PayloadIterator:
