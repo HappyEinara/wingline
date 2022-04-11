@@ -22,3 +22,4 @@ class FileTap(tap.Tap):
     ) -> None:
         super().__init__(source_file, name, cache_dir=cache_dir, parent=parent)
         self.hash = source_file.content_hash
+        self.description = f"File[{source_file.path.name}]"

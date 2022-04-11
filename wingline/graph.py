@@ -47,6 +47,8 @@ class PipelineGraph:
         def _activate_ancestors(this_pipe: pipe.BasePipe, active: bool) -> None:
             """Set ancestors to active unless a cache reader has appeared."""
 
+            if isinstance(this_pipe, sink.Sink):
+                active = True
             this_pipe.is_active = active
             if this_pipe.relationships.parent:
                 if isinstance(this_pipe, cachereader.CacheReader):

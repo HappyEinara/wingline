@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class WriterSink(sink.Sink):
     """A sink that writes to a file."""
 
-    emoji = "⇥💾"
+    emoji = "💾"
 
     def __init__(
         self,
@@ -29,6 +29,7 @@ class WriterSink(sink.Sink):
         self._writer: writer.Writer
         self._write: WritePointer
         logger.debug("Initialized writersink.")
+        self.description = f"WriteFile[{self._file.path.name}]"
 
     def setup(self) -> None:
         self._writer = self._file.writer()

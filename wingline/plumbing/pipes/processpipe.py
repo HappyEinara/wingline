@@ -10,7 +10,7 @@ from wingline.types import PayloadIterator, PipeProcess
 class ProcessPipe(pipe.Pipe):
     """A pipe that carries out a process on its input"""
 
-    emoji = "🠞⚙️"
+    emoji = "⚙️"
 
     def __init__(
         self, parent: pipe.BasePipe, process: PipeProcess, name: Optional[str] = None
@@ -22,6 +22,7 @@ class ProcessPipe(pipe.Pipe):
         if parent.hash is None:
             raise RuntimeError("Couldn't get hash of parent.")
         self.hash = hasher.hash_string(parent.hash + process_hash)
+        self.description = f"Process[{self.name}]"
 
     def process(self, payloads: PayloadIterator) -> PayloadIterator:
         """Do the processing."""

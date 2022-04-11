@@ -2,12 +2,28 @@
 # pylint: disable=duplicate-code
 
 import contextlib
+import datetime
+from decimal import Decimal
 from typing import Any, BinaryIO, Callable, Generator
 
 import msgpack
 
 from wingline.files.formats import _base
 from wingline.types import Payload, PayloadIterator
+
+
+def recover(obj: Any) -> Any:
+    """Try to recover from a TypeError."""
+
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, datetime.datetime):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: recover(v) for k, v in obj.items()}
+    if isinstance(obj, (list, set)):
+        return [recover(v) for v in obj]
+    return obj
 
 
 class Msgpack(_base.Format):
@@ -40,7 +56,11 @@ class Msgpack(_base.Format):
         """Writer."""
 
         def _write(payload: Payload) -> None:
-            msg = msgpack.packb(payload, **kwargs)
+            try:
+                msg = msgpack.packb(payload, **kwargs)
+            except TypeError:
+                payload = recover(payload)
+                msg = msgpack.packb(payload, **kwargs)
             handle.write(msg)
 
         yield _write

@@ -13,7 +13,7 @@ from wingline.plumbing.taps import filetap
 class CacheReader(filetap.FileTap):
     """A tap that reads from the cache of a previous run."""
 
-    emoji = "💾⏩"
+    emoji = "☁️⏩"
 
     def __init__(
         self,
@@ -26,3 +26,6 @@ class CacheReader(filetap.FileTap):
         super().__init__(cache_file, name, parent=parent)
         self.hash = parent.hash
         self.is_real_tap = False
+
+    def __str__(self) -> str:
+        return f"{self.emoji} CacheReader[{self.hash}]"

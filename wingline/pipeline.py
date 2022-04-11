@@ -5,7 +5,7 @@ from __future__ import annotations
 import pathlib
 from typing import Optional, Type, Union
 
-from wingline import graph, helpers, ui
+from wingline import graph, helpers
 from wingline.cache import intermediate
 from wingline.files import file
 from wingline.plumbing import pipe, tap

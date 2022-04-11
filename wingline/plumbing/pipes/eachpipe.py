@@ -10,7 +10,7 @@ from wingline.types import EachProcess, PayloadIterable, PayloadIterator, PipePr
 class EachPipe(processpipe.ProcessPipe):
     """A pipe that carries out a process on its input"""
 
-    emoji = "🠞⚙️"
+    emoji = "⚙️"
 
     def __init__(
         self,

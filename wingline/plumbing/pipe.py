@@ -1,10 +1,9 @@
-"""Base pipe class."""
+"""Base plumbing classes."""
 from __future__ import annotations
 
 import logging
 import pathlib
 import threading
-from abc import abstractmethod
 from dataclasses import dataclass
 from queue import Empty
 from typing import Callable, Optional, Set
@@ -126,6 +125,7 @@ class BasePipe:
 
     emoji = "🠞"
     hash: Optional[str]
+    description: Optional[str]
 
     def __init__(
         self,
@@ -157,6 +157,7 @@ class BasePipe:
             )
         )
         self.is_active: bool = True
+        self.is_sink: bool = False
 
     def add_child(self, other: BasePipe) -> None:
         """Register a child so it's input queue receives this pipe's output."""
@@ -185,15 +186,19 @@ class BasePipe:
     def start(self) -> None:
         """Start the process."""
         if not self.is_active:
-            raise RuntimeError("Inactive pipe was started.")
+            raise RuntimeError(f"{self}: Inactive pipe was started.")
         logger.debug("%s: Starting...", self)
+        if self._started:
+            raise RuntimeError(f"{self}: Pipe was started for a second time.")
         self._started = True
         self.thread.start()
         logger.debug("%s: Started thread", self)
-        if self.relationships.parent:
+        if self.relationships.parent and not (
+            self.relationships.parent.is_sink and self.relationships.parent.started
+        ):
             logger.debug("%s: Starting parent %s...", self, self.relationships.parent)
             self.relationships.parent.start()
-        logger.debug("%s: Started parent; pipe start complete.", self)
+            logger.debug("%s: Started parent; pipe start complete.", self)
 
     def join(self) -> None:
         """Wait for the process to complete."""
@@ -223,17 +228,14 @@ class BasePipe:
                 break
             yield payload
 
-    @abstractmethod
     def setup(self) -> None:
         """Set up before processing."""
 
-    @abstractmethod
     def teardown(self, success: bool = False) -> None:
         """Tidy up after processing."""
 
     def __str__(self) -> str:
-        emoji = self.emoji if self.is_active else "🚫"
-        return f"{emoji} {self.name}"
+        return f"{self.emoji} {self.description}-{self.hash}"
 
     def __repr__(self) -> str:
         return f"<{str(self)}-{id(self)}>"
@@ -252,4 +254,7 @@ class Pipe(BasePipe):
         super().__init__(name, relationships)
         self.hash: Optional[str] = (
             self.relationships.parent.hash if self.relationships.parent else None
+        )
+        self.description: Optional[str] = (
+            self.relationships.parent.description if self.relationships.parent else None
         )

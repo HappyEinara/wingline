@@ -13,7 +13,7 @@ from wingline.types import PayloadIterable, PayloadIterator, WritePointer
 class CacheWriter(pipe.Pipe):
     """A pipe to write the parent's output to a cache file."""
 
-    emoji = "⏩💾"
+    emoji = "⏩☁️"
 
     def __init__(
         self,
@@ -50,3 +50,6 @@ class CacheWriter(pipe.Pipe):
         if not self._writer:  # pragma: no cover
             raise RuntimeError("Can't close writer: was it opened?")
         self._writer.__exit__(None, None, None, success=success)
+
+    def __str__(self) -> str:
+        return f"{self.emoji}CacheWriter[{self.hash}]"
